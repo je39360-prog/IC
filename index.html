@@ -285,6 +285,20 @@ body{background:#fff}
     </div>
 
     <div id="resultArea" class="hide"></div>
+
+    <!-- 공용 QR 스캔 후 직원 선택 UI -->
+    <div id="empSelectArea" class="hide" style="text-align:left;margin-top:12px">
+      <hr style="border:none;border-top:1px solid var(--border);margin:0 0 14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-users" style="color:var(--primary)"></i> 본인 이름을 선택하세요</div>
+        <button class="btn btn-sm btn-s" onclick="closeEmpSelect()"><i class="fas fa-times"></i></button>
+      </div>
+      <div style="position:relative;margin-bottom:10px">
+        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px"></i>
+        <input type="text" id="empSelectSearch" placeholder="이름 검색" style="padding-left:32px" oninput="renderEmpSelect()">
+      </div>
+      <div id="empSelectGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:320px;overflow-y:auto"></div>
+    </div>
   </div>
 
   <p style="text-align:center;font-size:11px;color:var(--text3)"><i class="fas fa-info-circle"></i> 정상 출석: ~06:55 | 지각: 06:55~07:20 | 결석: 07:20~</p>
@@ -328,7 +342,7 @@ body{background:#fff}
           </div>
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
-        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody id="todayTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody id="todayTable"></tbody></table></div>
       </div>
 
       <div id="adminEmployees" class="admin-panel hide">
@@ -337,12 +351,26 @@ body{background:#fff}
           <div class="add-form">
             <input type="text" id="newName" placeholder="이름">
             <input type="text" id="newTeam" placeholder="팀명 (예: 개발1팀)">
+            <input type="text" id="newCar" placeholder="차량번호 (선택)" maxlength="10" style="text-transform:uppercase">
             <button class="btn btn-p btn-sm" onclick="addEmployee()"><i class="fas fa-plus"></i> 추가</button>
           </div>
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
         <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="이름 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
-        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+
+        <!-- 차량번호 수정 모달 -->
+        <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
+          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease">
+            <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-car" style="color:var(--primary)"></i> 차량번호 등록/수정</h3>
+            <p id="carModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
+            <input type="text" id="carModalInput" placeholder="차량번호 입력 (예: 12가3456)" maxlength="10" style="margin-bottom:12px;text-transform:uppercase" onkeypress="if(event.key==='Enter')saveCarNumber()">
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p" style="flex:1" onclick="saveCarNumber()"><i class="fas fa-save"></i> 저장</button>
+              <button class="btn btn-s" style="flex:1" onclick="closeCarModal()"><i class="fas fa-times"></i> 취소</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="adminStats" class="admin-panel hide">
@@ -392,11 +420,46 @@ body{background:#fff}
 
 <!-- ============== QR출력 탭 ============== -->
 <div class="page" id="tab-qrprint">
-  <div class="card">
-    <div class="card-title"><i class="fas fa-qrcode"></i> QR 코드 출력</div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">전체 직원의 QR 코드를 한 번에 출력합니다. A4 용지에 인쇄하여 각 직원에게 배포하세요.</p>
-    <button class="btn btn-p" onclick="printQR()" style="width:auto;margin-bottom:16px"><i class="fas fa-print"></i> QR 전체 인쇄</button>
-    <div class="qr-grid" id="qrGrid"></div>
+
+  <!-- 잠금 화면 -->
+  <div id="qrLogin" class="card" style="max-width:360px;margin:40px auto;text-align:center">
+    <div class="logo"><i class="fas fa-lock"></i></div>
+    <h2 style="font-size:18px;margin-bottom:6px">QR 출력 잠금</h2>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">관리자 비밀번호를 입력하세요</p>
+    <input type="password" id="qrPw" placeholder="비밀번호" maxlength="10" style="text-align:center;font-size:18px;letter-spacing:6px;margin-bottom:12px" onkeypress="if(event.key==='Enter')qrUnlock()">
+    <button class="btn btn-p btn-block" onclick="qrUnlock()"><i class="fas fa-unlock"></i> 확인</button>
+  </div>
+
+  <!-- QR 패널 -->
+  <div id="qrPanel" class="hide">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px">
+      <h2 style="font-size:16px;display:flex;align-items:center;gap:6px"><i class="fas fa-qrcode" style="color:var(--primary)"></i> 당일 출석 QR 코드</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-p" onclick="printDailyQR()"><i class="fas fa-print"></i> 인쇄</button>
+        <button class="btn btn-sm btn-danger" onclick="qrLock()"><i class="fas fa-lock"></i> 잠금</button>
+      </div>
+    </div>
+
+    <div class="card" style="text-align:center">
+      <div style="display:inline-flex;align-items:center;gap:8px;background:var(--border-light);border-radius:var(--radius);padding:8px 20px;margin-bottom:20px">
+        <i class="fas fa-calendar-alt" style="color:var(--primary)"></i>
+        <span id="qrDateLabel" style="font-size:15px;font-weight:700"></span>
+        <span id="qrDayLabel" style="font-size:13px;color:var(--text2)"></span>
+      </div>
+
+      <div style="display:flex;justify-content:center;margin-bottom:16px">
+        <div style="border:4px solid var(--primary);border-radius:16px;padding:12px;box-shadow:var(--shadow-lg);background:#fff">
+          <img id="dailyQRImg" src="" alt="QR" style="width:220px;height:220px;display:block">
+        </div>
+      </div>
+
+      <div style="background:var(--success-bg);border-radius:var(--radius);padding:10px 16px;margin-bottom:12px;display:inline-flex;align-items:center;gap:8px">
+        <i class="fas fa-info-circle" style="color:var(--success)"></i>
+        <span style="font-size:13px;color:var(--success);font-weight:600">이 QR은 오늘 하루만 유효합니다</span>
+      </div>
+
+      <p style="font-size:12px;color:var(--text2)">직원이 이 QR을 스캔하면 이름 선택 후 출석이 처리됩니다.</p>
+    </div>
   </div>
 </div>
 
@@ -418,12 +481,16 @@ function saveData(data) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
 }
 
-function genId() {
-  var data = getData();
-  var id = 'EMP' + String(data.nextId).padStart(3, '0');
-  data.nextId++;
-  saveData(data);
-  return id;
+function genId(data) {
+  var used = {};
+  data.employees.forEach(function(e) {
+    var m = e.id.match(/^EMP(\d+)$/);
+    if (m) used[parseInt(m[1], 10)] = true;
+  });
+  var n = 1;
+  while (used[n]) n++;
+  data.nextId = n + 1;
+  return 'EMP' + String(n).padStart(3, '0');
 }
 
 function getToday() {
@@ -550,9 +617,26 @@ function scanFrame() {
   var img = ctx.getImageData(0, 0, c.width, c.height);
   var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
   if (code && code.data) {
+    var daily = extractDailyToken(code.data);
+    if (daily) {
+      stopScanner();
+      if (isTodayDailyToken(daily)) {
+        showEmpSelect();
+      } else {
+        toast('오늘 날짜의 QR 코드가 아닙니다. 관리자에게 문의하세요.');
+      }
+      return;
+    }
     var token = extractToken(code.data);
     if (token) { stopScanner(); showEmployee(token); }
   }
+}
+
+function extractDailyToken(url) {
+  if (!url) return null;
+  var m = url.match(/[?&]daily=([^&]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  return null;
 }
 
 function extractToken(url) {
@@ -767,13 +851,13 @@ function loadTodayAdmin() {
 
     if (todayRecords[emp.id]) {
       var r = todayRecords[emp.id];
-      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: r.time, status: r.status, reason: r.reason });
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, car: emp.car||'', time: r.time, status: r.status, reason: r.reason });
       teamStats[emp.team][r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : 'absent']++;
       if (r.status === '출석') attend++;
       else if (r.status === '지각') late++;
       else absent++;
     } else {
-      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: '-', status: '미체크', reason: '' });
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, car: emp.car||'', time: '-', status: '미체크', reason: '' });
       teamStats[emp.team].nocheck++;
       nocheck++;
     }
@@ -790,9 +874,10 @@ function loadTodayAdmin() {
   tbody.innerHTML = '';
   rows.forEach(function(r) {
     var cls = r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : r.status === '결석' ? 'absent' : 'nocheck';
-    tbody.innerHTML += '<tr><td>'+r.id+'</td><td><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td>'+r.time+'</td><td><span class="badge '+cls+'">'+r.status+'</span></td><td>'+(r.reason||'-')+'</td></tr>';
+    var carCell = r.car ? '<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:1px 7px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> '+r.car+'</span>' : '<span style="color:var(--text3);font-size:11px">-</span>';
+    tbody.innerHTML += '<tr><td>'+r.id+'</td><td><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td>'+carCell+'</td><td>'+r.time+'</td><td><span class="badge '+cls+'">'+r.status+'</span></td><td>'+(r.reason||'-')+'</td></tr>';
   });
-  if (rows.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
+  if (rows.length === 0) tbody.innerHTML = '<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
 
   // Charts
   var c1 = document.getElementById('todayChart').getContext('2d');
@@ -827,33 +912,39 @@ function renderEmployees() {
   tbody.innerHTML = '';
   filtered.forEach(function(emp) {
     var act = emp.active !== false;
+    var car = emp.car || '';
+    var carDisplay = car ? '<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> '+car+'</span>' : '<span style="color:var(--text3);font-size:11px">미등록</span>';
     tbody.innerHTML += '<tr>' +
       '<td>'+emp.id+'</td>' +
       '<td><strong>'+emp.name+'</strong></td>' +
       '<td>'+emp.team+'</td>' +
+      '<td>'+carDisplay+'</td>' +
       '<td><span class="badge '+(act?'active':'inactive')+'">'+(act?'활성':'비활성')+'</span></td>' +
       '<td style="white-space:nowrap">' +
         (act
           ? '<button class="btn btn-sm btn-danger" onclick="toggleEmp(\''+emp.id+'\')"><i class="fas fa-ban"></i></button> '
           : '<button class="btn btn-sm btn-success" onclick="toggleEmp(\''+emp.id+'\')"><i class="fas fa-check"></i></button> ') +
+        '<button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8" onclick="openCarModal(\''+emp.id+'\')" title="차량번호 등록/수정"><i class="fas fa-car"></i></button> ' +
         '<button class="btn btn-sm btn-s" onclick="regenQR(\''+emp.id+'\')"><i class="fas fa-sync"></i></button> ' +
         '<button class="btn btn-sm btn-danger" onclick="deleteEmp(\''+emp.id+'\')"><i class="fas fa-trash"></i></button>' +
       '</td></tr>';
   });
-  if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+  if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
 }
 
 function addEmployee() {
   var name = document.getElementById('newName').value.trim();
   var team = document.getElementById('newTeam').value.trim();
+  var car = document.getElementById('newCar').value.trim();
   if (!name || !team) { toast('이름과 팀명을 입력해주세요.'); return; }
   var data = getData();
-  var id = genId();
+  var id = genId(data);
   var token = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
-  data.employees.push({ id: id, name: name, team: team, token: token, registered: getToday(), active: true });
+  data.employees.push({ id: id, name: name, team: team, token: token, registered: getToday(), active: true, car: car });
   saveData(data);
   document.getElementById('newName').value = '';
   document.getElementById('newTeam').value = '';
+  document.getElementById('newCar').value = '';
   renderEmployees();
   loadTodayAdmin();
   toast(name + '님이 추가되었습니다. (ID: ' + id + ')');
@@ -893,6 +984,48 @@ function deleteEmp(id) {
   loadTodayAdmin();
   toast(emp.name + '님이 삭제되었습니다.');
 }
+
+// ============================================================
+// 차량번호 관리
+// ============================================================
+var carTargetId = null;
+
+function openCarModal(id) {
+  var data = getData();
+  var emp = null;
+  data.employees.forEach(function(e) { if (e.id === id) emp = e; });
+  if (!emp) return;
+  carTargetId = id;
+  document.getElementById('carModalName').textContent = emp.name + ' (' + emp.team + ')';
+  document.getElementById('carModalInput').value = emp.car || '';
+  var modal = document.getElementById('carModal');
+  modal.style.display = 'flex';
+  setTimeout(function() { document.getElementById('carModalInput').focus(); }, 100);
+}
+
+function closeCarModal() {
+  document.getElementById('carModal').style.display = 'none';
+  carTargetId = null;
+}
+
+function saveCarNumber() {
+  if (!carTargetId) return;
+  var car = document.getElementById('carModalInput').value.trim();
+  var data = getData();
+  var empName = '';
+  data.employees.forEach(function(e) {
+    if (e.id === carTargetId) { e.car = car; empName = e.name; }
+  });
+  saveData(data);
+  closeCarModal();
+  renderEmployees();
+  toast(empName + '님의 차량번호가 ' + (car ? car + '로 등록되었습니다.' : '삭제되었습니다.'));
+}
+
+// 모달 외부 클릭 시 닫기
+document.getElementById('carModal').addEventListener('click', function(e) {
+  if (e.target === this) closeCarModal();
+});
 
 function initStatDates() {
   var today = new Date();
@@ -977,11 +1110,11 @@ function renderReport() {
     teamStats[emp.team].total++;
     if (todayRecs[emp.id]) {
       var r = todayRecs[emp.id];
-      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: r.time, status: r.status, reason: r.reason });
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, car: emp.car||'', time: r.time, status: r.status, reason: r.reason });
       teamStats[emp.team][r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : 'absent']++;
       if (r.status === '출석') attend++; else if (r.status === '지각') late++; else absent++;
     } else {
-      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: '-', status: '미체크', reason: '' });
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, car: emp.car||'', time: '-', status: '미체크', reason: '' });
       teamStats[emp.team].nocheck++; nocheck++;
     }
   });
@@ -997,10 +1130,11 @@ function renderReport() {
     '</div>';
 
   if (rows.length > 0) {
-    html += '<table class="report-table"><thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody>';
+    html += '<table class="report-table"><thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody>';
     rows.forEach(function(r, i) {
       var cls = r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : r.status === '결석' ? 'absent' : 'nocheck';
-      html += '<tr><td>'+(i+1)+'</td><td>'+r.id+'</td><td style="text-align:left;padding-left:6px"><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td>'+r.time+'</td><td><span class="report-status '+cls+'">'+r.status+'</span></td><td style="font-size:8.5px;color:var(--text2)">'+(r.reason||'-')+'</td></tr>';
+      var carCell = r.car ? r.car : '-';
+      html += '<tr><td>'+(i+1)+'</td><td>'+r.id+'</td><td style="text-align:left;padding-left:6px"><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td style="font-weight:600;color:#1a73e8">'+carCell+'</td><td>'+r.time+'</td><td><span class="report-status '+cls+'">'+r.status+'</span></td><td style="font-size:8.5px;color:var(--text2)">'+(r.reason||'-')+'</td></tr>';
     });
     html += '</tbody></table>';
 
@@ -1040,44 +1174,186 @@ function renderReport() {
 }
 
 // ============================================================
-// QR GRID
+// 당일 공용 QR
 // ============================================================
-function renderQRGrid() {
+var DAILY_QR_SECRET = 'icheon2025';
+
+function getDailyToken(dateStr) {
+  // 날짜 + 시크릿을 간단히 해싱 (DJB2)
+  var str = dateStr + ':' + DAILY_QR_SECRET;
+  var hash = 5381;
+  for (var i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash) ^ str.charCodeAt(i);
+    hash = hash & 0x7fffffff;
+  }
+  return 'daily_' + dateStr + '_' + hash.toString(36);
+}
+
+function isDailyToken(token) {
+  if (!token || token.indexOf('daily_') !== 0) return false;
+  var parts = token.split('_');
+  if (parts.length < 3) return false;
+  var dateStr = parts[1];
+  return token === getDailyToken(dateStr);
+}
+
+function isTodayDailyToken(token) {
+  if (!isDailyToken(token)) return false;
+  var parts = token.split('_');
+  return parts[1] === getToday();
+}
+
+// QR출력 탭 잠금/해제
+var qrUnlocked = false;
+
+function qrUnlock() {
+  var pw = document.getElementById('qrPw').value;
+  var stored = localStorage.getItem('attendance_admin_pw') || '0743';
+  if (pw === stored || pw === '0743') {
+    qrUnlocked = true;
+    document.getElementById('qrLogin').classList.add('hide');
+    document.getElementById('qrPanel').classList.remove('hide');
+    renderDailyQR();
+  } else {
+    toast('비밀번호가 틀렸습니다.');
+    document.getElementById('qrPw').value = '';
+  }
+}
+
+function qrLock() {
+  qrUnlocked = false;
+  document.getElementById('qrLogin').classList.remove('hide');
+  document.getElementById('qrPanel').classList.add('hide');
+  document.getElementById('qrPw').value = '';
+}
+
+function renderDailyQR() {
+  var today = getToday();
+  var token = getDailyToken(today);
+  var baseUrl = window.location.href.split('?')[0].split('#')[0];
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
+  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=' + encodeURIComponent(qrData);
+
+  document.getElementById('dailyQRImg').src = qrSrc;
+  document.getElementById('qrDateLabel').textContent = today;
+  var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  document.getElementById('qrDayLabel').textContent = '(' + days[new Date(today).getDay()] + ')';
+}
+
+function printDailyQR() {
+  var today = getToday();
+  var token = getDailyToken(today);
+  var baseUrl = window.location.href.split('?')[0].split('#')[0];
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
+  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=10&data=' + encodeURIComponent(qrData);
+  var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  var dayName = days[new Date(today).getDay()];
+  var w = window.open('', '_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>당일 출석 QR</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}.wrap{text-align:center;padding:40px}.logo{font-size:22px;font-weight:700;color:#1a73e8;margin-bottom:6px}.sub{font-size:14px;color:#666;margin-bottom:24px}.qr-border{display:inline-block;border:6px solid #1a73e8;border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12)}.qr-border img{width:300px;height:300px;display:block}.date{margin-top:20px;font-size:18px;font-weight:700;color:#202124}.notice{margin-top:10px;font-size:12px;color:#ea4335;font-weight:600}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>');
+  w.document.write('<div class="wrap"><div class="logo">이천물류 아침 조회 출석 체크</div><div class="sub">아래 QR 코드를 스캔하여 출석을 체크하세요</div><div class="qr-border"><img src="' + qrSrc + '" alt="QR"></div><div class="date">' + today + ' (' + dayName + ')</div><div class="notice">⚠ 이 QR 코드는 오늘 하루만 유효합니다</div></div></body></html>');
+  w.document.close();
+  setTimeout(function() { w.print(); }, 1200);
+}
+
+// ============================================================
+// 직원 선택 (공용 QR 스캔 후)
+// ============================================================
+function showEmpSelect() {
+  document.getElementById('employeeInfo').classList.add('hide');
+  document.getElementById('resultArea').classList.add('hide');
+  document.getElementById('empSelectArea').classList.remove('hide');
+  document.getElementById('empSelectSearch').value = '';
+  renderEmpSelect();
+}
+
+function closeEmpSelect() {
+  document.getElementById('empSelectArea').classList.add('hide');
+  document.getElementById('empSelectSearch').value = '';
+}
+
+function renderEmpSelect() {
   var data = getData();
-  var grid = document.getElementById('qrGrid');
-  var active = data.employees.filter(function(e) { return e.active !== false; });
+  var today = getToday();
+  var search = (document.getElementById('empSelectSearch').value || '').toLowerCase();
+  var checkedIds = {};
+  data.records.forEach(function(r) { if (r.date === today) checkedIds[r.empId] = r.status; });
+
+  var active = data.employees.filter(function(e) {
+    if (e.active === false) return false;
+    if (!search) return true;
+    return e.name.toLowerCase().indexOf(search) !== -1 || (e.team||'').toLowerCase().indexOf(search) !== -1;
+  });
+
+  // 팀별 그룹
+  var teams = {};
+  active.forEach(function(e) {
+    if (!teams[e.team]) teams[e.team] = [];
+    teams[e.team].push(e);
+  });
+
+  var grid = document.getElementById('empSelectGrid');
+  grid.innerHTML = '';
+
   if (active.length === 0) {
-    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-qrcode"></i><p>등록된 활성 직원이 없습니다.</p></div>';
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text3)"><i class="fas fa-search" style="font-size:28px;display:block;margin-bottom:8px"></i>검색 결과가 없습니다</div>';
     return;
   }
-  grid.innerHTML = '';
-  active.forEach(function(emp) {
-    var url = window.location.href.split('?')[0].split('#')[0] + '?token=' + encodeURIComponent(emp.token);
-    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(url);
-    var div = document.createElement('div');
-    div.className = 'qr-item';
-    div.innerHTML = '<img src="' + qrSrc + '" alt="QR" onerror="this.src=\'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#eee" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="#999" font-size="10">QR</text></svg>') + '">' +
-      '<div class="name">' + emp.name + '</div><div class="team">' + emp.team + '</div><div class="id">' + emp.id + '</div>';
-    grid.appendChild(div);
+
+  Object.keys(teams).forEach(function(team) {
+    var header = document.createElement('div');
+    header.style.cssText = 'grid-column:1/-1;font-size:12px;font-weight:700;color:var(--primary);padding:4px 0 2px;border-bottom:2px solid var(--primary)';
+    header.textContent = team;
+    grid.appendChild(header);
+
+    teams[team].forEach(function(emp) {
+      var status = checkedIds[emp.id];
+      var done = !!status;
+      var card = document.createElement('div');
+      var cls = done ? (status === '출석' ? 'checked' : status === '지각' ? 'late-checked' : 'absent-checked') : '';
+      card.className = 'emp-card ' + cls;
+      card.style.cssText = 'padding:12px 8px;cursor:' + (done ? 'default' : 'pointer');
+      card.innerHTML =
+        '<div class="status-dot ' + (done ? (status==='출석'?'attend':status==='지각'?'late':'absent') : 'nocheck') + '"></div>' +
+        '<div class="name">' + emp.name + '</div>' +
+        '<div class="team">' + emp.team + '</div>' +
+        (done ? '<div style="font-size:10px;margin-top:2px;font-weight:600">' + status + ' ✓</div>' : '');
+      if (!done) {
+        card.onclick = (function(e) { return function() { selectEmpForCheckin(e); }; })(emp);
+      }
+      grid.appendChild(card);
+    });
   });
 }
 
-function printQR() {
-  var data = getData();
-  var active = data.employees.filter(function(e) { return e.active !== false; });
-  if (active.length === 0) { toast('출력할 직원이 없습니다.'); return; }
-  var w = window.open('', '_blank');
-  var h = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR 코드 출력</title><style>@page{size:A4;margin:8mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;padding:5px}.header{text-align:center;margin-bottom:10px}.header h1{font-size:16px;color:#1a73e8}.header p{font-size:10px;color:#666;margin-top:2px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.item{text-align:center;padding:8px 4px;border:1px dashed #ccc;border-radius:4px;page-break-inside:avoid}.item img{width:100%;max-width:100px}.item .name{font-size:11px;font-weight:700;margin-top:3px}.item .team{font-size:9px;color:#888}</style></head><body>';
-  h += '<div class="header"><h1>QR 출석 코드</h1><p>' + getToday() + ' 기준</p></div><div class="grid">';
-  active.forEach(function(emp) {
-    var url = window.location.href.split('?')[0].split('#')[0] + '?token=' + encodeURIComponent(emp.token);
-    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
-    h += '<div class="item"><img src="'+qrSrc+'" alt="QR"><div class="name">'+emp.name+'</div><div class="team">'+emp.team+'</div></div>';
-  });
-  h += '</div></body></html>';
-  w.document.write(h);
-  w.document.close();
-  setTimeout(function() { w.print(); }, 1000);
+function selectEmpForCheckin(emp) {
+  closeEmpSelect();
+  currentEmp = emp;
+  var info = document.getElementById('employeeInfo');
+  info.classList.remove('hide');
+  document.getElementById('empName').textContent = emp.name;
+  document.getElementById('empTeam').textContent = emp.team;
+  document.getElementById('checkinBtn').disabled = false;
+  document.getElementById('checkinBtn').innerHTML = '<i class="fas fa-check-circle"></i> 출석 체크하기';
+  document.getElementById('reasonArea').classList.add('hide');
+
+  var hhmm = getHHMM();
+  var status = getStatus(hhmm);
+  var badge = document.getElementById('statusBadge');
+  if (status === '출석') { badge.className = 'badge attend'; badge.innerHTML = '<i class="fas fa-check-circle"></i> 출석 가능'; }
+  else if (status === '지각') { badge.className = 'badge late'; badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 지각 처리 예정'; }
+  else { badge.className = 'badge absent'; badge.innerHTML = '<i class="fas fa-times-circle"></i> 결석 처리 예정 (사유 입력 필요)'; }
+}
+
+// ============================================================
+// QR GRID (구버전 개인별 QR — 내부용으로 유지)
+// ============================================================
+function renderQRGrid() {
+  // QR출력 탭이 활성화될 때 잠금 상태 리셋
+  if (!qrUnlocked) {
+    document.getElementById('qrLogin').classList.remove('hide');
+    document.getElementById('qrPanel').classList.add('hide');
+    document.getElementById('qrPw').value = '';
+  }
 }
 
 // ============================================================
@@ -1140,8 +1416,18 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
 // URL 파라미터로 토큰이 전달된 경우 (QR 스캔 결과)
 (function() {
   var params = new URLSearchParams(window.location.search);
+  var daily = params.get('daily');
   var token = params.get('token');
-  if (token) {
+  if (daily) {
+    setTimeout(function() {
+      document.querySelector('[data-tab="checkin"]').click();
+      if (isTodayDailyToken(daily)) {
+        showEmpSelect();
+      } else {
+        toast('오늘 날짜의 QR 코드가 아닙니다. 관리자에게 문의하세요.');
+      }
+    }, 300);
+  } else if (token) {
     setTimeout(function() {
       showEmployee(token);
       document.querySelector('[data-tab="checkin"]').click();
