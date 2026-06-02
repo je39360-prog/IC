@@ -1,0 +1,1153 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>이천물류 출석 체크 시스템</title>
+<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#f0f2f5;--card:#fff;--primary:#1a73e8;--primary-dark:#1557b0;--success:#34a853;--success-bg:#e6f4ea;--warning:#f9ab00;--warning-bg:#fef7e0;--danger:#ea4335;--danger-bg:#fce8e6;--text:#202124;--text2:#5f6368;--text3:#9aa0a6;--border:#dadce0;--border-light:#f1f3f4;--shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);--radius:12px;--radius-lg:16px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;--transition:.2s cubic-bezier(.4,0,.2,1)}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5}
+.hide{display:none!important}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(.85)}to{opacity:1;transform:scale(1)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
+
+/* Nav */
+.nav{display:flex;background:var(--card);box-shadow:var(--shadow);position:sticky;top:0;z-index:100;overflow-x:auto}
+.nav-btn{flex:1;padding:14px 10px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all var(--transition);white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;position:relative}
+.nav-btn:hover{color:var(--primary);background:var(--border-light)}
+.nav-btn.active{color:var(--primary)}
+.nav-btn.active::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:3px;background:var(--primary);border-radius:3px 3px 0 0}
+
+.page{padding:16px;max-width:800px;margin:0 auto;animation:fadeIn var(--transition);display:none}
+.page.active{display:block}
+
+/* Card */
+.card{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px 20px;margin-bottom:16px;animation:slideUp .3s ease}
+.card-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.card-title i{color:var(--primary)}
+/* Employee selection grid */
+.emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;animation:fadeIn .3s ease}
+.emp-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;text-align:center;cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden}
+.emp-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--primary)}
+.emp-card:active{transform:scale(.95)}
+.emp-card .name{font-size:15px;font-weight:700}
+.emp-card .team{font-size:11px;color:var(--text2);margin-top:2px}
+.emp-card .status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-bottom:4px}
+.emp-card .status-dot.attend{background:var(--success)}
+.emp-card .status-dot.late{background:var(--warning)}
+.emp-card .status-dot.absent{background:var(--danger)}
+.emp-card .status-dot.nocheck{background:var(--text3)}
+.emp-card.checked{background:var(--success-bg);border-color:var(--success);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.checked .name{color:var(--success)}
+.emp-card.checked .name::after{content:' ✓';font-weight:700}
+.emp-card.checked .team{color:var(--success)}
+.emp-card.late-checked{background:var(--warning-bg);border-color:var(--warning);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.late-checked .name{color:var(--warning)}
+.emp-card.absent-checked{background:var(--danger-bg);border-color:var(--danger);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.absent-checked .name{color:var(--danger)}
+.team-header{font-size:14px;font-weight:700;color:var(--primary);margin:12px 0 4px;padding-bottom:4px;border-bottom:2px solid var(--primary);text-align:left;grid-column:1/-1}
+.search-wrap{position:relative;margin-bottom:12px}
+.search-wrap i{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3)}
+.search-wrap input{padding-left:36px!important}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all var(--transition);text-decoration:none}
+.btn:active{transform:scale(.97)}
+.btn-p{background:linear-gradient(135deg,var(--primary),#4285f4);color:#fff;box-shadow:0 4px 12px rgba(26,115,232,.3)}
+.btn-p:hover{box-shadow:0 6px 20px rgba(26,115,232,.4)}
+.btn-s{background:var(--border-light);color:var(--text)}
+.btn-s:hover{background:#e8eaed}
+.btn-success{background:linear-gradient(135deg,var(--success),#2d9249);color:#fff;box-shadow:0 4px 12px rgba(52,168,83,.3)}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#d33426);color:#fff;box-shadow:0 4px 12px rgba(234,67,53,.3)}
+.btn-sm{padding:6px 12px;font-size:12px;width:auto}
+.btn-block{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Input */
+.input-group{display:flex;gap:8px}
+.input-group input{flex:1;padding:10px 12px;border:2px solid var(--border);border-radius:var(--radius);font-size:14px;transition:border-color var(--transition)}
+.input-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+.input-group button{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-weight:600;cursor:pointer}
+
+input,select,textarea{padding:10px 12px;border:2px solid var(--border);border-radius:var(--radius-sm,8px);font-size:14px;transition:border-color var(--transition);font-family:inherit;width:100%}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+textarea{resize:vertical;min-height:60px}
+
+/* Logo */
+.logo{width:56px;height:56px;background:linear-gradient(135deg,var(--primary),#4285f4);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#fff;font-size:24px;box-shadow:0 4px 12px rgba(26,115,232,.3)}
+.logo-sm{width:40px;height:40px;font-size:18px}
+
+/* Scanner */
+.scanner-wrap{position:relative;overflow:hidden;border-radius:var(--radius);margin-bottom:12px;background:#000;min-height:200px}
+.scanner-wrap video{width:100%;display:block}
+.scanner-overlay{position:absolute;top:0;left:0;right:0;bottom:0;border:3px solid var(--primary);border-radius:var(--radius);pointer-events:none;animation:pulse 2s infinite}
+.scanner-hint{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#fff;font-size:13px;font-weight:600;text-shadow:0 2px 8px rgba(0,0,0,.5);pointer-events:none;text-align:center}
+.scanner-hint i{font-size:28px;display:block;margin-bottom:6px}
+
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.badge.attend{background:var(--success-bg);color:var(--success)}
+.badge.late{background:var(--warning-bg);color:var(--warning)}
+.badge.absent{background:var(--danger-bg);color:var(--danger)}
+.badge.nocheck{background:var(--border-light);color:var(--text3)}
+.badge.active{background:var(--success-bg);color:var(--success)}
+.badge.inactive{background:var(--danger-bg);color:var(--danger)}
+
+/* Summary cards */
+.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:16px}
+.summary-card{background:var(--card);border-radius:var(--radius);padding:14px 10px;text-align:center;box-shadow:var(--shadow)}
+.summary-card .num{font-size:28px;font-weight:700}
+.summary-card .label{font-size:11px;color:var(--text2);margin-top:2px}
+.summary-card .icon{margin-bottom:6px;font-size:18px}
+.summary-card.attend .num,.summary-card.attend .icon{color:var(--success)}
+.summary-card.late .num,.summary-card.late .icon{color:var(--warning)}
+.summary-card.absent .num,.summary-card.absent .icon{color:var(--danger)}
+.summary-card.nocheck .num,.summary-card.nocheck .icon{color:var(--text3)}
+.summary-card.total .num,.summary-card.total .icon{color:var(--primary)}
+
+/* Table */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);max-height:400px;overflow-y:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--border)}
+th{background:var(--border-light);font-weight:600;font-size:11px;color:var(--text2);position:sticky;top:0;z-index:1}
+tr:nth-child(even){background:#fafbfc}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty-state i{font-size:40px;margin-bottom:10px;display:block}
+
+/* Report */
+.report-wrap{max-width:190mm;margin:0 auto;padding:20px}
+.report-header{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--primary)}
+.report-header h1{font-size:22px;color:var(--primary);margin-bottom:2px}
+.report-header .sub{font-size:13px;color:var(--text2)}
+.report-header .date{font-size:11px;color:var(--text3);margin-top:4px}
+.report-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
+.report-summary .item{text-align:center;padding:8px 4px;background:#f8f9fa;border-radius:6px;font-size:10px}
+.report-summary .item .n{font-size:20px;font-weight:700}
+.report-summary .item.attend .n{color:var(--success)}
+.report-summary .item.late .n{color:var(--warning)}
+.report-summary .item.absent .n{color:var(--danger)}
+.report-summary .item.nocheck .n{color:var(--text3)}
+.report-summary .item.total .n{color:var(--primary)}
+.report-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}
+.report-table th{background:var(--primary);color:#fff;padding:5px 4px;font-size:9px}
+.report-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;font-size:9.5px}
+.report-table tr:nth-child(even){background:#f8f9fa}
+.report-status{display:inline-block;padding:1px 8px;border-radius:8px;font-weight:600;font-size:9px}
+.report-status.attend{background:var(--success-bg);color:var(--success)}
+.report-status.late{background:var(--warning-bg);color:var(--warning)}
+.report-status.absent{background:var(--danger-bg);color:var(--danger)}
+.report-status.nocheck{background:var(--border-light);color:var(--text3)}
+.report-footer{margin-top:16px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9px;color:var(--text3)}
+.report-sign{display:inline-block;width:100px;border-bottom:1px solid #ccc;margin-left:6px}
+
+/* Clock */
+.clock-display{text-align:center;margin-bottom:16px}
+.clock-display .time{font-size:36px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:2px}
+.clock-display .date{font-size:13px;color:var(--text2);margin-top:4px}
+
+/* Check-in button */
+.btn-checkin{background:linear-gradient(135deg,var(--primary),#4285f4);color:#fff;padding:18px 24px;font-size:18px;font-weight:700;border:none;border-radius:var(--radius-lg);cursor:pointer;width:100%;transition:all var(--transition);box-shadow:0 4px 15px rgba(26,115,232,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-checkin:active{transform:scale(.96)}
+.btn-checkin:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Result animation */
+.result-wrap{text-align:center;padding:20px 0;animation:scaleIn .4s ease}
+.result-wrap .icon-big{font-size:72px;margin-bottom:12px}
+.result-wrap.attend .icon-big{color:var(--success)}
+.result-wrap.late .icon-big{color:var(--warning)}
+.result-wrap.absent .icon-big{color:var(--danger)}
+.result-wrap h2{font-size:20px;margin-bottom:8px}
+.result-wrap .detail{color:var(--text2);font-size:14px;margin-bottom:12px}
+.result-wrap .time-box{display:inline-flex;align-items:center;gap:10px;background:var(--border-light);padding:8px 16px;border-radius:var(--radius);font-size:13px;color:var(--text2);margin-bottom:16px}
+
+/* Progress bar */
+.progress-bar{display:flex;height:14px;background:var(--border-light);border-radius:7px;overflow:hidden;margin:4px 0}
+.progress-bar .seg{height:100%;transition:width .5s}
+.progress-bar .seg.attend{background:var(--success)}
+.progress-bar .seg.late{background:var(--warning)}
+.progress-bar .seg.absent{background:var(--danger)}
+.progress-bar .seg.nocheck{background:var(--text3)}
+
+/* Team stats */
+.team-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border-light)}
+.team-row:last-child{border-bottom:none}
+.team-name{font-weight:600;font-size:12px;min-width:70px}
+.team-nums{font-size:10px;color:var(--text2);min-width:120px;text-align:right;white-space:nowrap}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.filter-bar label{font-size:13px;font-weight:600}
+
+/* Employee form */
+.add-form{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.add-form input{flex:1;min-width:120px}
+
+/* QR grid */
+.qr-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.qr-item{text-align:center;padding:10px 6px;border:1px solid var(--border);border-radius:var(--radius)}
+.qr-item img{width:100%;max-width:100px}
+.qr-item .name{font-size:12px;font-weight:600;margin-top:4px}
+.qr-item .team{font-size:10px;color:var(--text2)}
+.qr-item .id{font-size:9px;color:var(--text3)}
+
+/* Spinner */
+.spinner{display:inline-block;width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .6s linear infinite}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#323232;color:#fff;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:500;z-index:999;opacity:0;transition:all var(--transition);pointer-events:none;box-shadow:var(--shadow-lg);text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* Responsive */
+@media(max-width:480px){
+.page{padding:12px}
+.card{padding:16px 14px}
+.summary-grid{grid-template-columns:repeat(3,1fr)}
+.clock-display .time{font-size:28px}
+.btn-checkin{padding:14px 18px;font-size:16px}
+}
+@media print{
+body{background:#fff}
+.nav,.filter-bar,.btn-checkin,.scanner-wrap,.hide-print{display:none!important}
+.page{display:block!important;padding:0;max-width:100%}
+.card{box-shadow:none;padding:0;border:none}
+.report-header h1{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<nav class="nav" id="mainNav">
+  <button class="nav-btn active" data-tab="checkin"><i class="fas fa-camera"></i> 출석체크</button>
+  <button class="nav-btn" data-tab="admin"><i class="fas fa-cog"></i> 관리자</button>
+  <button class="nav-btn" data-tab="report"><i class="fas fa-file-alt"></i> 보고서</button>
+  <button class="nav-btn" data-tab="qrprint"><i class="fas fa-qrcode"></i> QR출력</button>
+</nav>
+
+<!-- ============== 출석체크 탭 ============== -->
+<div class="page active" id="tab-checkin">
+  <div class="card" style="text-align:center">
+    <div class="logo"><i class="fas fa-clock"></i></div>
+    <h1 style="font-size:20px;margin-bottom:4px">아침 조회 출석 체크</h1>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">QR 코드를 스캔하여 출석 체크를 진행하세요</p>
+
+    <div class="scanner-wrap" id="scannerWrap" style="display:none">
+       <video id="video" autoplay muted playsinline webkit-playsinline="true"></video>
+      <canvas id="canvas" style="display:none"></canvas>
+      <div class="scanner-overlay"></div>
+      <div class="scanner-hint"><i class="fas fa-qrcode"></i> QR 코드를 화면에 맞춰주세요</div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <button class="btn btn-p btn-block" id="scanToggle" onclick="toggleScanner()"><i class="fas fa-camera"></i> <span>카메라 스캔</span></button>
+    </div>
+    <p style="font-size:10px;color:var(--text3);margin-bottom:12px"><i class="fas fa-info-circle"></i> 카메라 권한 요청 시 <strong>허용</strong>을 선택해주세요</p>
+
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--text3);font-size:12px">
+      <span style="flex:1;height:1px;background:var(--border)"></span>
+      <span>또는 직접 입력</span>
+      <span style="flex:1;height:1px;background:var(--border)"></span>
+    </div>
+
+    <div class="input-group" style="margin-bottom:12px">
+      <input type="text" id="manualToken" placeholder="출석 코드 직접 입력" maxlength="40" autocomplete="off">
+      <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
+    </div>
+
+    <div id="employeeInfo" class="hide" style="text-align:center">
+      <hr style="border:none;border-top:1px solid var(--border);margin:16px 0">
+      <div class="emp-avatar" style="width:64px;height:64px;background:var(--border-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 8px;color:var(--primary);font-size:28px"><i class="fas fa-user"></i></div>
+      <h2 id="empName" style="font-size:20px;margin-bottom:2px"></h2>
+      <p id="empTeam" style="color:var(--text2);font-size:14px;margin-bottom:12px"></p>
+
+      <div class="clock-display">
+        <div class="time" id="currentTime">--:--:--</div>
+        <div class="date" id="currentDate"></div>
+      </div>
+
+      <div id="statusBadge" class="badge" style="font-size:13px;padding:6px 16px;margin-bottom:12px"></div>
+      <button class="btn-checkin" id="checkinBtn" onclick="confirmCheckin()"><i class="fas fa-check-circle"></i> 출석 체크하기</button>
+
+      <div id="reasonArea" class="hide" style="margin-top:12px;text-align:left">
+        <label style="font-weight:600;font-size:13px;display:block;margin-bottom:6px">결석 사유 <span style="color:var(--danger)">*</span></label>
+        <textarea id="reasonInput" placeholder="결석 사유를 입력해주세요 (예: 지각, 외근, 개인사유)"></textarea>
+        <button class="btn btn-p btn-block" onclick="confirmCheckinWithReason()" style="margin-top:6px"><i class="fas fa-paper-plane"></i> 제출</button>
+      </div>
+    </div>
+
+    <div id="resultArea" class="hide"></div>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:var(--text3)"><i class="fas fa-info-circle"></i> 정상 출석: ~06:55 | 지각: 06:55~07:20 | 결석: 07:20~</p>
+</div>
+
+<!-- ============== 관리자 탭 ============== -->
+<div class="page" id="tab-admin">
+  <div id="adminLogin" class="card" style="max-width:360px;margin:40px auto;text-align:center">
+    <div class="logo"><i class="fas fa-lock"></i></div>
+    <h2 style="font-size:18px;margin-bottom:20px">관리자 로그인</h2>
+    <input type="password" id="adminPw" placeholder="비밀번호" maxlength="10" style="text-align:center;font-size:18px;letter-spacing:6px;margin-bottom:12px" onkeypress="if(event.key==='Enter')adminLogin()">
+    <button class="btn btn-p btn-block" onclick="adminLogin()"><i class="fas fa-sign-in-alt"></i> 로그인</button>
+  </div>
+
+  <div id="adminPanel" class="hide">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px">
+      <h2 style="font-size:16px;display:flex;align-items:center;gap:6px"><i class="fas fa-cog" style="color:var(--primary)"></i> 관리자 페이지</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-s" onclick="exportCSV()"><i class="fas fa-download"></i> CSV 내보내기</button>
+        <button class="btn btn-sm btn-danger" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--border-light);border-radius:var(--radius);padding:3px;overflow-x:auto">
+        <button class="admin-tab active" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'today')"><i class="fas fa-chart-bar"></i> 현황</button>
+        <button class="admin-tab" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'employees')"><i class="fas fa-users"></i> 직원</button>
+        <button class="admin-tab" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'stats')"><i class="fas fa-chart-pie"></i> 통계</button>
+      </div>
+
+      <div id="adminToday" class="admin-panel">
+        <div class="summary-grid" id="todaySummary"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+          <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">출석 현황</div>
+            <canvas id="todayChart" height="160"></canvas>
+          </div>
+          <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">팀별 출석률</div>
+            <canvas id="teamChart" height="160"></canvas>
+          </div>
+        </div>
+        <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
+        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody id="todayTable"></tbody></table></div>
+      </div>
+
+      <div id="adminEmployees" class="admin-panel hide">
+        <div style="margin-bottom:12px">
+          <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-user-plus"></i> 직원 추가</div>
+          <div class="add-form">
+            <input type="text" id="newName" placeholder="이름">
+            <input type="text" id="newTeam" placeholder="팀명 (예: 개발1팀)">
+            <button class="btn btn-p btn-sm" onclick="addEmployee()"><i class="fas fa-plus"></i> 추가</button>
+          </div>
+        </div>
+        <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
+        <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="이름 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+      </div>
+
+      <div id="adminStats" class="admin-panel hide">
+        <div class="filter-bar">
+          <label>시작:</label><input type="date" id="statStart">
+          <label>종료:</label><input type="date" id="statEnd">
+          <button class="btn btn-sm btn-p" onclick="loadStats()"><i class="fas fa-search"></i> 조회</button>
+        </div>
+        <div class="summary-grid" id="statsSummary"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">일별 현황</div>
+            <canvas id="dailyChart" height="160"></canvas>
+          </div>
+          <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
+            <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">전체 통계</div>
+            <canvas id="pieChart" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============== 보고서 탭 ============== -->
+<div class="page" id="tab-report">
+  <div class="card" style="padding:12px 16px">
+    <div class="filter-bar">
+      <label><i class="far fa-calendar-alt"></i> 날짜:</label>
+      <input type="date" id="reportDate">
+      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 새로고침</button>
+      <button class="btn btn-sm btn-s" onclick="window.print()"><i class="fas fa-print"></i> 인쇄</button>
+    </div>
+  </div>
+
+  <div class="card hide-print" style="text-align:center;padding:12px">
+    <p style="color:var(--text2);font-size:12px"><i class="fas fa-info-circle"></i> 보고서는 인쇄(Ctrl+P)하여 A4 용지로 출력할 수 있습니다.</p>
+  </div>
+
+  <div id="reportContent" class="report-wrap" style="background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow)">
+    <div style="text-align:center;padding:60px 20px;color:var(--text3)">
+      <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:12px;display:block"></i>
+      <p>보고서를 생성하려면 날짜를 선택하고 새로고침 버튼을 눌러주세요.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ============== QR출력 탭 ============== -->
+<div class="page" id="tab-qrprint">
+  <div class="card">
+    <div class="card-title"><i class="fas fa-qrcode"></i> QR 코드 출력</div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">전체 직원의 QR 코드를 한 번에 출력합니다. A4 용지에 인쇄하여 각 직원에게 배포하세요.</p>
+    <button class="btn btn-p" onclick="printQR()" style="width:auto;margin-bottom:16px"><i class="fas fa-print"></i> QR 전체 인쇄</button>
+    <div class="qr-grid" id="qrGrid"></div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA LAYER (localStorage 기반)
+// ============================================================
+const STORAGE_KEY = 'attendance_data';
+
+function getData() {
+  var raw = localStorage.getItem(STORAGE_KEY);
+  if (raw) {
+    try { return JSON.parse(raw); } catch(e) {}
+  }
+  return { employees: [], records: [], settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' }, nextId: 1 };
+}
+
+function saveData(data) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function genId() {
+  var data = getData();
+  var id = 'EMP' + String(data.nextId).padStart(3, '0');
+  data.nextId++;
+  saveData(data);
+  return id;
+}
+
+function getToday() {
+  var d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getTimeStr() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0') + ':' + String(d.getSeconds()).padStart(2,'0');
+}
+
+function getHHMM() {
+  var d = new Date();
+  return String(d.getHours()).padStart(2,'0') + ':' + String(d.getMinutes()).padStart(2,'0');
+}
+
+function getDayName(dateStr) {
+  var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+  return days[new Date(dateStr).getDay()];
+}
+
+function getStatus(timeStr) {
+  var data = getData();
+  var attendDead = data.settings.attendDeadline || '06:55';
+  var lateDead = data.settings.lateDeadline || '07:20';
+  if (timeStr <= attendDead) return '출석';
+  if (timeStr <= lateDead) return '지각';
+  return '결석';
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+document.querySelectorAll('.nav-btn').forEach(function(btn) {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+    this.classList.add('active');
+    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+    if (this.dataset.tab === 'admin' && document.getElementById('adminPanel').classList.contains('hide') === false) {
+      loadTodayAdmin();
+    }
+    if (this.dataset.tab === 'report') renderReport();
+    if (this.dataset.tab === 'qrprint') renderQRGrid();
+  });
+});
+
+// ============================================================
+// QR SCANNER
+// ============================================================
+var scanning = false, scanStream = null, scanInterval = null;
+
+function toggleScanner() {
+  if (scanning) { stopScanner(); return; }
+  var wrap = document.getElementById('scannerWrap');
+  var btn = document.getElementById('scanToggle');
+  if (window.location.protocol === 'file:') {
+     console.warn('File protocol detected. Camera may not work due to browser security policies.');
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+     toast('이 브라우저에서는 카메라 기능을 지원하지 않거나,\n보안 연결(HTTPS)이 필요합니다.');
+     return;
+  }
+  wrap.style.display = 'block';
+  btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
+  scanning = true;
+
+   // iOS Safari 강제 오디오 컨텍스트 해제 (muted 비디오 필요)
+  if (window.AudioContext) { var ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); }
+
+  var constraints = { audio: false, video: { width: { ideal: 640 }, height: { ideal: 480 } } };
+  tryCam('environment');
+
+  function tryCam(facing) {
+    var c = JSON.parse(JSON.stringify(constraints));
+    if (facing) c.video.facingMode = facing;
+    navigator.mediaDevices.getUserMedia(c)
+      .then(onStream)
+      .catch(function(err) {
+        if (facing === 'environment') { tryCam(null); return; }
+        var msg = '카메라를 열 수 없습니다.';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          msg = '카메라 권한이 거부되었습니다.\n브라우저 설정에서 카메라 권한을 허용해주세요.';
+        } else if (err.name === 'NotFoundError') {
+          msg = '카메라를 찾을 수 없습니다.\n기기에 카메라가 있는지 확인해주세요.';
+        } else if (err.name === 'NotReadableError') {
+          msg = '카메라를 사용할 수 없습니다.\n다른 앱에서 카메라를 사용 중인지 확인해주세요.';
+        }
+        toast(msg);
+        stopScanner(); 
+      });
+  }
+
+  function onStream(s) {
+    scanStream = s;
+    var v = document.getElementById('video');
+    v.srcObject = s;
+    v.setAttribute('playsinline', true);
+    v.setAttribute('webkit-playsinline', 'true');
+    v.muted = true;
+    v.playsInline = true;
+    v.play().catch(function(){});
+    setTimeout(function() { v.play().catch(function(){}); }, 100);
+    scanInterval = setInterval(scanFrame, 400);
+  }  
+}
+
+function stopScanner() {
+  document.getElementById('scannerWrap').style.display = 'none';
+  document.getElementById('scanToggle').innerHTML = '<i class="fas fa-camera"></i> <span>카메라 스캔</span>';
+  scanning = false;
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream) { scanStream.getTracks().forEach(function(t){t.stop()}); scanStream = null; }
+}
+
+function scanFrame() {
+  var v = document.getElementById('video');
+  var c = document.getElementById('canvas');
+  if (v.readyState < v.HAVE_ENOUGH_DATA) return;
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(v, 0, 0, c.width, c.height);
+  var img = ctx.getImageData(0, 0, c.width, c.height);
+  var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    var token = extractToken(code.data);
+    if (token) { stopScanner(); showEmployee(token); }
+  }
+}
+
+function extractToken(url) {
+  if (!url) return null;
+  var m = url.match(/[?&]token=([^&]+)/);
+  if (m) return decodeURIComponent(m[1]);
+  if (url.length > 5 && url.indexOf('http') === -1) return url;
+  return null;
+}
+
+// ============================================================
+// CHECK-IN
+// ============================================================
+var currentEmp = null;
+
+function manualCheckin() {
+  var token = document.getElementById('manualToken').value.trim();
+  if (!token) { toast('출석 코드를 입력해주세요.'); return; }
+  stopScanner();
+  showEmployee(token);
+}
+
+function showEmployee(token) {
+  var data = getData();
+  var emp = null;
+  data.employees.forEach(function(e) { if (e.token === token && e.active !== false) emp = e; });
+  var info = document.getElementById('employeeInfo');
+  var result = document.getElementById('resultArea');
+  result.classList.add('hide');
+  result.innerHTML = '';
+
+  if (!emp) {
+    document.getElementById('employeeInfo').classList.add('hide');
+    toast('유효하지 않은 QR 코드입니다. 관리자에게 문의하세요.');
+    return;
+  }
+
+  var today = getToday();
+  var already = false;
+  data.records.forEach(function(r) { if (r.date === today && r.empId === emp.id) already = true; });
+
+  if (already) {
+    info.classList.add('hide');
+    result.classList.remove('hide');
+    result.innerHTML = '<div class="result-wrap attend"><div class="icon-big"><i class="fas fa-check-circle"></i></div><h2>이미 출석 체크 완료</h2><div class="detail">' + emp.name + ' · ' + emp.team + '</div><button class="btn btn-s" onclick="resetCheckin()"><i class="fas fa-redo"></i> 다시 체크</button></div>';
+    return;
+  }
+
+  currentEmp = emp;
+  info.classList.remove('hide');
+  document.getElementById('empName').textContent = emp.name;
+  document.getElementById('empTeam').textContent = emp.team;
+  document.getElementById('checkinBtn').disabled = false;
+  document.getElementById('checkinBtn').innerHTML = '<i class="fas fa-check-circle"></i> 출석 체크하기';
+  document.getElementById('reasonArea').classList.add('hide');
+  document.getElementById('manualToken').value = '';
+
+  var hhmm = getHHMM();
+  var status = getStatus(hhmm);
+  var badge = document.getElementById('statusBadge');
+  if (status === '출석') { badge.className = 'badge attend'; badge.innerHTML = '<i class="fas fa-check-circle"></i> 출석 가능'; }
+  else if (status === '지각') { badge.className = 'badge late'; badge.innerHTML = '<i class="fas fa-exclamation-triangle"></i> 지각 처리 예정'; }
+  else { badge.className = 'badge absent'; badge.innerHTML = '<i class="fas fa-times-circle"></i> 결석 처리 예정 (사유 입력 필요)'; }
+}
+
+function resetCheckin() {
+  currentEmp = null;
+  document.getElementById('employeeInfo').classList.add('hide');
+  document.getElementById('resultArea').classList.add('hide');
+  document.getElementById('resultArea').innerHTML = '';
+}
+
+function confirmCheckin() {
+  if (!currentEmp) return;
+  var btn = document.getElementById('checkinBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> 처리 중...';
+
+  var hhmm = getHHMM();
+  var status = getStatus(hhmm);
+
+  if (status === '결석') {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-check-circle"></i> 출석 체크하기';
+    document.getElementById('reasonArea').classList.remove('hide');
+    toast('결석 처리됩니다. 사유를 입력해주세요.');
+    return;
+  }
+
+  doCheckin('');
+}
+
+function confirmCheckinWithReason() {
+  var reason = document.getElementById('reasonInput').value.trim();
+  if (!reason) { toast('결석 사유를 입력해주세요.'); return; }
+  doCheckin(reason);
+}
+
+function doCheckin(reason) {
+  var data = getData();
+  var today = getToday();
+  var time = getTimeStr();
+  var hhmm = getHHMM();
+  var status = getStatus(hhmm);
+
+  data.records.push({
+    date: today, empId: currentEmp.id, name: currentEmp.name, team: currentEmp.team,
+    time: time, status: status, reason: reason, method: 'QR'
+  });
+  saveData(data);
+
+  var info = document.getElementById('employeeInfo');
+  var result = document.getElementById('resultArea');
+  info.classList.add('hide');
+  result.classList.remove('hide');
+
+  var icon = status === '출석' ? 'fa-check-circle' : status === '지각' ? 'fa-clock' : 'fa-times-circle';
+  var msg = status === '출석' ? currentEmp.name + '님, 출석 처리되었습니다.' :
+            status === '지각' ? currentEmp.name + '님, 지각 처리되었습니다.' :
+            currentEmp.name + '님, 결석 처리되었습니다.';
+
+  result.innerHTML = '<div class="result-wrap ' + status.toLowerCase() + '">' +
+    '<div class="icon-big"><i class="fas ' + icon + '"></i></div>' +
+    '<h2>' + msg + '</h2>' +
+    '<div class="detail">' + currentEmp.name + ' · ' + currentEmp.team + '</div>' +
+    '<div class="time-box"><i class="far fa-clock"></i> ' + time + ' <span class="badge ' + status.toLowerCase() + '">' + status + '</span></div>' +
+    '<button class="btn btn-s" onclick="resetCheckin()"><i class="fas fa-redo"></i> 확인</button>' +
+    '</div>';
+
+  if (navigator.vibrate) {
+    if (status === '출석') navigator.vibrate([100,50,100]);
+    else navigator.vibrate([100,50,50]);
+  }
+  currentEmp = null;
+}
+
+// ============================================================
+// CLOCK
+// ============================================================
+function updateClock() {
+  var now = new Date();
+  var h = String(now.getHours()).padStart(2,'0');
+  var m = String(now.getMinutes()).padStart(2,'0');
+  var s = String(now.getSeconds()).padStart(2,'0');
+  var el = document.getElementById('currentTime');
+  if (el) el.textContent = h + ':' + m + ':' + s;
+
+  var de = document.getElementById('currentDate');
+  if (de) {
+    var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+    de.textContent = now.getFullYear() + '년 ' + String(now.getMonth()+1).padStart(2,'0') + '월 ' + String(now.getDate()).padStart(2,'0') + '일 ' + days[now.getDay()];
+  }
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+document.getElementById('manualToken').addEventListener('keypress', function(e) {
+  if (e.key === 'Enter') manualCheckin();
+});
+
+// ============================================================
+// ADMIN
+// ============================================================
+var adminLoggedIn = false;
+var todayChartInst = null, teamChartInst = null, dailyChartInst = null, pieChartInst = null;
+
+function adminLogin() {
+  var pw = document.getElementById('adminPw').value;
+  if (pw === '0743') {
+    adminLoggedIn = true;
+    document.getElementById('adminLogin').classList.add('hide');
+    document.getElementById('adminPanel').classList.remove('hide');
+    loadTodayAdmin();
+    initStatDates();
+  } else {
+    toast('비밀번호가 틀렸습니다.');
+  }
+}
+
+function adminLogout() {
+  adminLoggedIn = false;
+  document.getElementById('adminLogin').classList.remove('hide');
+  document.getElementById('adminPanel').classList.add('hide');
+  document.getElementById('adminPw').value = '';
+}
+
+function switchAdminTab(btn, tab) {
+  document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.remove('active'); t.style.background = 'transparent'; t.style.color = 'var(--text2)'; });
+  btn.classList.add('active'); btn.style.background = '#fff'; btn.style.color = 'var(--primary)';
+  document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.add('hide'); });
+  document.getElementById('admin' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.remove('hide');
+  if (tab === 'today') loadTodayAdmin();
+  if (tab === 'stats') loadStats();
+}
+
+function loadTodayAdmin() {
+  var data = getData();
+  var today = getToday();
+  var activeEmps = data.employees.filter(function(e) { return e.active !== false; });
+  var todayRecords = {};
+  data.records.forEach(function(r) {
+    if (r.date === today) todayRecords[r.empId] = r;
+  });
+
+  var attend=0, late=0, absent=0, nocheck=0;
+  var teamStats = {};
+  var rows = [];
+
+  activeEmps.forEach(function(emp) {
+    if (!teamStats[emp.team]) teamStats[emp.team] = { attend:0, late:0, absent:0, nocheck:0, total:0 };
+    teamStats[emp.team].total++;
+
+    if (todayRecords[emp.id]) {
+      var r = todayRecords[emp.id];
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: r.time, status: r.status, reason: r.reason });
+      teamStats[emp.team][r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : 'absent']++;
+      if (r.status === '출석') attend++;
+      else if (r.status === '지각') late++;
+      else absent++;
+    } else {
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: '-', status: '미체크', reason: '' });
+      teamStats[emp.team].nocheck++;
+      nocheck++;
+    }
+  });
+
+  document.getElementById('todaySummary').innerHTML =
+    '<div class="summary-card attend"><div class="icon"><i class="fas fa-check-circle"></i></div><div class="num">'+attend+'</div><div class="label">출석</div></div>' +
+    '<div class="summary-card late"><div class="icon"><i class="fas fa-clock"></i></div><div class="num">'+late+'</div><div class="label">지각</div></div>' +
+    '<div class="summary-card absent"><div class="icon"><i class="fas fa-times-circle"></i></div><div class="num">'+absent+'</div><div class="label">결석</div></div>' +
+    '<div class="summary-card nocheck"><div class="icon"><i class="fas fa-minus-circle"></i></div><div class="num">'+nocheck+'</div><div class="label">미체크</div></div>' +
+    '<div class="summary-card total"><div class="icon"><i class="fas fa-users"></i></div><div class="num">'+activeEmps.length+'</div><div class="label">전체</div></div>';
+
+  var tbody = document.getElementById('todayTable');
+  tbody.innerHTML = '';
+  rows.forEach(function(r) {
+    var cls = r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : r.status === '결석' ? 'absent' : 'nocheck';
+    tbody.innerHTML += '<tr><td>'+r.id+'</td><td><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td>'+r.time+'</td><td><span class="badge '+cls+'">'+r.status+'</span></td><td>'+(r.reason||'-')+'</td></tr>';
+  });
+  if (rows.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
+
+  // Charts
+  var c1 = document.getElementById('todayChart').getContext('2d');
+  if (todayChartInst) todayChartInst.destroy();
+  todayChartInst = new Chart(c1, {
+    type: 'doughnut',
+    data: { labels: ['출석','지각','결석','미체크'], datasets: [{ data: [attend,late,absent,nocheck], backgroundColor: ['#34a853','#f9ab00','#ea4335','#dadce0'], borderWidth: 0 }] },
+    options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'bottom', labels: { padding: 10, font: { size: 10 } } } }, cutout: '60%' }
+  });
+
+  var teamLabels = Object.keys(teamStats);
+  var teamRates = teamLabels.map(function(t) { var ts=teamStats[t]; return ts.total>0 ? Math.round(ts.attend/ts.total*100) : 0; });
+  var c2 = document.getElementById('teamChart').getContext('2d');
+  if (teamChartInst) teamChartInst.destroy();
+  teamChartInst = new Chart(c2, {
+    type: 'bar',
+    data: { labels: teamLabels, datasets: [{ label: '출석률(%)', data: teamRates, backgroundColor: ['#34a853','#1a73e8','#f9ab00','#ea4335','#9334e6','#00bcd4'], borderRadius: 6, maxBarThickness: 30 }] },
+    options: { responsive: true, indexAxis: 'y', scales: { x: { beginAtZero: true, max: 100, grid: { display: false } }, y: { grid: { display: false } } }, plugins: { legend: { display: false } } }
+  });
+
+  renderEmployees();
+}
+
+function renderEmployees() {
+  var data = getData();
+  var search = (document.getElementById('empSearch').value || '').toLowerCase();
+  var filtered = data.employees.filter(function(e) {
+    return e.name.toLowerCase().indexOf(search) !== -1 || (e.team||'').toLowerCase().indexOf(search) !== -1 || e.id.toLowerCase().indexOf(search) !== -1;
+  });
+
+  var tbody = document.getElementById('empTable');
+  tbody.innerHTML = '';
+  filtered.forEach(function(emp) {
+    var act = emp.active !== false;
+    tbody.innerHTML += '<tr>' +
+      '<td>'+emp.id+'</td>' +
+      '<td><strong>'+emp.name+'</strong></td>' +
+      '<td>'+emp.team+'</td>' +
+      '<td><span class="badge '+(act?'active':'inactive')+'">'+(act?'활성':'비활성')+'</span></td>' +
+      '<td style="white-space:nowrap">' +
+        (act
+          ? '<button class="btn btn-sm btn-danger" onclick="toggleEmp(\''+emp.id+'\')"><i class="fas fa-ban"></i></button> '
+          : '<button class="btn btn-sm btn-success" onclick="toggleEmp(\''+emp.id+'\')"><i class="fas fa-check"></i></button> ') +
+        '<button class="btn btn-sm btn-s" onclick="regenQR(\''+emp.id+'\')"><i class="fas fa-sync"></i></button> ' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteEmp(\''+emp.id+'\')"><i class="fas fa-trash"></i></button>' +
+      '</td></tr>';
+  });
+  if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+}
+
+function addEmployee() {
+  var name = document.getElementById('newName').value.trim();
+  var team = document.getElementById('newTeam').value.trim();
+  if (!name || !team) { toast('이름과 팀명을 입력해주세요.'); return; }
+  var data = getData();
+  var id = genId();
+  var token = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  data.employees.push({ id: id, name: name, team: team, token: token, registered: getToday(), active: true });
+  saveData(data);
+  document.getElementById('newName').value = '';
+  document.getElementById('newTeam').value = '';
+  renderEmployees();
+  loadTodayAdmin();
+  toast(name + '님이 추가되었습니다. (ID: ' + id + ')');
+}
+
+function toggleEmp(id) {
+  var data = getData();
+  data.employees.forEach(function(e) {
+    if (e.id === id) e.active = (e.active === false);
+  });
+  saveData(data);
+  renderEmployees();
+  loadTodayAdmin();
+}
+
+function regenQR(id) {
+  if (!confirm('QR 코드를 재발급하면 기존 QR는 사용할 수 없습니다. 계속할까요?')) return;
+  var data = getData();
+  data.employees.forEach(function(e) {
+    if (e.id === id) e.token = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
+  });
+  saveData(data);
+  renderEmployees();
+  toast('QR 코드가 재발급되었습니다.');
+}
+
+function deleteEmp(id) {
+  var data = getData();
+  var emp = null;
+  data.employees.forEach(function(e) { if (e.id === id) emp = e; });
+  if (!emp) return;
+  if (!confirm(emp.name + '님(' + id + ')을 정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return;
+  if (!confirm('최종 확인: ' + emp.name + '님을 삭제하시겠습니까?')) return;
+  data.employees = data.employees.filter(function(e) { return e.id !== id; });
+  saveData(data);
+  renderEmployees();
+  loadTodayAdmin();
+  toast(emp.name + '님이 삭제되었습니다.');
+}
+
+function initStatDates() {
+  var today = new Date();
+  var week = new Date(today); week.setDate(week.getDate() - 6);
+  document.getElementById('statEnd').value = today.toISOString().split('T')[0];
+  document.getElementById('statStart').value = week.toISOString().split('T')[0];
+}
+
+function loadStats() {
+  var start = document.getElementById('statStart').value;
+  var end = document.getElementById('statEnd').value;
+  if (!start || !end) { toast('기간을 선택해주세요.'); return; }
+
+  var data = getData();
+  var activeIds = {};
+  data.employees.forEach(function(e) { if (e.active !== false) activeIds[e.id] = true; });
+
+  var s = new Date(start + 'T00:00:00'), e = new Date(end + 'T23:59:59');
+  var daily = {};
+  var totalAtt=0, totalLate=0, totalAbs=0;
+
+  data.records.forEach(function(r) {
+    if (!activeIds[r.empId]) return;
+    var rd = new Date(r.date + 'T00:00:00');
+    if (rd < s || rd > e) return;
+    if (!daily[r.date]) daily[r.date] = { attend:0, late:0, absent:0 };
+    if (r.status === '출석') { daily[r.date].attend++; totalAtt++; }
+    else if (r.status === '지각') { daily[r.date].late++; totalLate++; }
+    else if (r.status === '결석') { daily[r.date].absent++; totalAbs++; }
+  });
+
+  var sorted = Object.keys(daily).sort();
+  var labels = sorted.map(function(d) { return d.slice(5); });
+  var dAtt = sorted.map(function(d) { return daily[d].attend; });
+  var dLate = sorted.map(function(d) { return daily[d].late; });
+  var dAbs = sorted.map(function(d) { return daily[d].absent; });
+
+  document.getElementById('statsSummary').innerHTML =
+    '<div class="summary-card attend"><div class="icon"><i class="fas fa-check-circle"></i></div><div class="num">'+totalAtt+'</div><div class="label">출석</div></div>' +
+    '<div class="summary-card late"><div class="icon"><i class="fas fa-clock"></i></div><div class="num">'+totalLate+'</div><div class="label">지각</div></div>' +
+    '<div class="summary-card absent"><div class="icon"><i class="fas fa-times-circle"></i></div><div class="num">'+totalAbs+'</div><div class="label">결석</div></div>' +
+    '<div class="summary-card total"><div class="icon"><i class="fas fa-calendar-day"></i></div><div class="num">'+sorted.length+'</div><div class="label">조회일수</div></div>';
+
+  var ctx1 = document.getElementById('dailyChart').getContext('2d');
+  if (dailyChartInst) dailyChartInst.destroy();
+  dailyChartInst = new Chart(ctx1, {
+    type: 'bar',
+    data: { labels: labels, datasets: [
+      { label: '출석', data: dAtt, backgroundColor: '#34a853', borderRadius: 4 },
+      { label: '지각', data: dLate, backgroundColor: '#f9ab00', borderRadius: 4 },
+      { label: '결석', data: dAbs, backgroundColor: '#ea4335', borderRadius: 4 }
+    ]},
+    options: { responsive: true, scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f3f4' } } }, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+  });
+
+  var ctx2 = document.getElementById('pieChart').getContext('2d');
+  if (pieChartInst) pieChartInst.destroy();
+  pieChartInst = new Chart(ctx2, {
+    type: 'pie',
+    data: { labels: ['출석','지각','결석'], datasets: [{ data: [totalAtt, totalLate, totalAbs], backgroundColor: ['#34a853','#f9ab00','#ea4335'], borderWidth: 0 }] },
+    options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } } }
+  });
+}
+
+// ============================================================
+// REPORT
+// ============================================================
+function renderReport() {
+  var date = document.getElementById('reportDate').value;
+  if (!date) { date = getToday(); document.getElementById('reportDate').value = date; }
+  var data = getData();
+  var activeEmps = data.employees.filter(function(e) { return e.active !== false; });
+  var todayRecs = {};
+  data.records.forEach(function(r) { if (r.date === date) todayRecs[r.empId] = r; });
+
+  var attend=0, late=0, absent=0, nocheck=0;
+  var teamStats = {};
+  var rows = [];
+
+  activeEmps.forEach(function(emp) {
+    if (!teamStats[emp.team]) teamStats[emp.team] = { attend:0, late:0, absent:0, nocheck:0, total:0 };
+    teamStats[emp.team].total++;
+    if (todayRecs[emp.id]) {
+      var r = todayRecs[emp.id];
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: r.time, status: r.status, reason: r.reason });
+      teamStats[emp.team][r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : 'absent']++;
+      if (r.status === '출석') attend++; else if (r.status === '지각') late++; else absent++;
+    } else {
+      rows.push({ id: emp.id, name: emp.name, team: emp.team, time: '-', status: '미체크', reason: '' });
+      teamStats[emp.team].nocheck++; nocheck++;
+    }
+  });
+
+  var html = '<div class="report-header"><h1>' + (data.settings.company || '이천물류') + '</h1><div class="sub">아침 조회 출석 보고서</div><div class="date">' + date + ' (' + getDayName(date) + ')</div></div>';
+
+  html += '<div class="report-summary">' +
+    '<div class="item attend"><div class="n">'+attend+'</div>출석</div>' +
+    '<div class="item late"><div class="n">'+late+'</div>지각</div>' +
+    '<div class="item absent"><div class="n">'+absent+'</div>결석</div>' +
+    '<div class="item nocheck"><div class="n">'+nocheck+'</div>미체크</div>' +
+    '<div class="item total"><div class="n">'+activeEmps.length+'</div>전체</div>' +
+    '</div>';
+
+  if (rows.length > 0) {
+    html += '<table class="report-table"><thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody>';
+    rows.forEach(function(r, i) {
+      var cls = r.status === '출석' ? 'attend' : r.status === '지각' ? 'late' : r.status === '결석' ? 'absent' : 'nocheck';
+      html += '<tr><td>'+(i+1)+'</td><td>'+r.id+'</td><td style="text-align:left;padding-left:6px"><strong>'+r.name+'</strong></td><td>'+r.team+'</td><td>'+r.time+'</td><td><span class="report-status '+cls+'">'+r.status+'</span></td><td style="font-size:8.5px;color:var(--text2)">'+(r.reason||'-')+'</td></tr>';
+    });
+    html += '</tbody></table>';
+
+    html += '<div style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:var(--primary);margin-bottom:6px;display:flex;align-items:center;gap:4px"><i class="fas fa-chart-bar"></i> 팀별 출석 현황</div>';
+    html += '<table class="report-table"><thead><tr><th style="text-align:left;padding-left:6px">팀명</th><th>출석</th><th>지각</th><th>결석</th><th>미체크</th><th>전체</th><th>출석률</th></tr></thead><tbody>';
+    var teamKeys = Object.keys(teamStats);
+    teamKeys.forEach(function(t) {
+      var ts = teamStats[t];
+      var rate = ts.total > 0 ? (ts.attend / ts.total * 100).toFixed(1) : '0.0';
+      html += '<tr><td style="text-align:left;padding-left:6px"><strong>'+t+'</strong></td><td>'+ts.attend+'</td><td>'+ts.late+'</td><td>'+ts.absent+'</td><td>'+ts.nocheck+'</td><td>'+ts.total+'</td><td style="font-weight:700;color:'+(rate>=80?'var(--success)':rate>=50?'var(--warning)':'var(--danger)')+'">'+rate+'%</td></tr>';
+    });
+    html += '</tbody></table></div>';
+
+    // Progress bars
+    teamKeys.forEach(function(t) {
+      var ts = teamStats[t];
+      if (ts.total === 0) return;
+      var aW = (ts.attend/ts.total*100), lW = (ts.late/ts.total*100), abW = (ts.absent/ts.total*100), nW = (ts.nocheck/ts.total*100);
+      html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:9px">';
+      html += '<span style="font-weight:600;min-width:60px;font-size:9.5px">'+t+'</span>';
+      html += '<div class="progress-bar" style="flex:1;height:10px">';
+      if (aW>0) html += '<div class="seg attend" style="width:'+aW+'%"></div>';
+      if (lW>0) html += '<div class="seg late" style="width:'+lW+'%"></div>';
+      if (abW>0) html += '<div class="seg absent" style="width:'+abW+'%"></div>';
+      if (nW>0) html += '<div class="seg nocheck" style="width:'+nW+'%"></div>';
+      html += '</div>';
+      html += '<span style="color:var(--text2);min-width:90px;text-align:right">출석 '+ts.attend+' / 지각 '+ts.late+' / 결석 '+ts.absent+'</span>';
+      html += '</div>';
+    });
+  } else {
+    html += '<div style="text-align:center;padding:40px;color:var(--text3)"><i class="fas fa-users" style="font-size:36px;margin-bottom:8px;display:block"></i><p>등록된 직원이 없습니다.</p></div>';
+  }
+
+  html += '<div class="report-footer"><span><i class="far fa-clock"></i> 생성: ' + new Date().toLocaleString('ko-KR', {timeZone:'Asia/Seoul'}) + '</span><span>확인 <span class="report-sign"></span>   인계 <span class="report-sign"></span></span></div>';
+
+  document.getElementById('reportContent').innerHTML = html;
+}
+
+// ============================================================
+// QR GRID
+// ============================================================
+function renderQRGrid() {
+  var data = getData();
+  var grid = document.getElementById('qrGrid');
+  var active = data.employees.filter(function(e) { return e.active !== false; });
+  if (active.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><i class="fas fa-qrcode"></i><p>등록된 활성 직원이 없습니다.</p></div>';
+    return;
+  }
+  grid.innerHTML = '';
+  active.forEach(function(emp) {
+    var url = window.location.href.split('?')[0].split('#')[0] + '?token=' + encodeURIComponent(emp.token);
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=' + encodeURIComponent(url);
+    var div = document.createElement('div');
+    div.className = 'qr-item';
+    div.innerHTML = '<img src="' + qrSrc + '" alt="QR" onerror="this.src=\'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect fill="#eee" width="100" height="100"/><text x="50" y="55" text-anchor="middle" fill="#999" font-size="10">QR</text></svg>') + '">' +
+      '<div class="name">' + emp.name + '</div><div class="team">' + emp.team + '</div><div class="id">' + emp.id + '</div>';
+    grid.appendChild(div);
+  });
+}
+
+function printQR() {
+  var data = getData();
+  var active = data.employees.filter(function(e) { return e.active !== false; });
+  if (active.length === 0) { toast('출력할 직원이 없습니다.'); return; }
+  var w = window.open('', '_blank');
+  var h = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>QR 코드 출력</title><style>@page{size:A4;margin:8mm}*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;padding:5px}.header{text-align:center;margin-bottom:10px}.header h1{font-size:16px;color:#1a73e8}.header p{font-size:10px;color:#666;margin-top:2px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.item{text-align:center;padding:8px 4px;border:1px dashed #ccc;border-radius:4px;page-break-inside:avoid}.item img{width:100%;max-width:100px}.item .name{font-size:11px;font-weight:700;margin-top:3px}.item .team{font-size:9px;color:#888}</style></head><body>';
+  h += '<div class="header"><h1>QR 출석 코드</h1><p>' + getToday() + ' 기준</p></div><div class="grid">';
+  active.forEach(function(emp) {
+    var url = window.location.href.split('?')[0].split('#')[0] + '?token=' + encodeURIComponent(emp.token);
+    var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeURIComponent(url);
+    h += '<div class="item"><img src="'+qrSrc+'" alt="QR"><div class="name">'+emp.name+'</div><div class="team">'+emp.team+'</div></div>';
+  });
+  h += '</div></body></html>';
+  w.document.write(h);
+  w.document.close();
+  setTimeout(function() { w.print(); }, 1000);
+}
+
+// ============================================================
+// CSV EXPORT
+// ============================================================
+function exportCSV() {
+  var data = getData();
+  var csv = '\uFEFF날짜,직원ID,이름,팀명,출석시간,상태,사유\n';
+  data.records.forEach(function(r) {
+    csv += r.date + ',' + r.empId + ',' + r.name + ',' + r.team + ',' + r.time + ',' + r.status + ',' + (r.reason || '') + '\n';
+  });
+  var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  var link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = 'attendance_' + getToday() + '.csv';
+  link.click();
+  toast('CSV 파일이 다운로드되었습니다. Google Sheets에서 열어보세요.');
+}
+
+// ============================================================
+// TOAST
+// ============================================================
+function toast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+// ============================================================
+// ADMIN PASSWORD CHANGE (localStorage)
+// ============================================================
+// 기본 비밀번호: 0743
+// 변경하려면 브라우저 콘솔에서: localStorage.setItem('attendance_admin_pw', '1234')
+
+// ============================================================
+// INIT: 날짜 기본값
+// ============================================================
+document.getElementById('reportDate').value = getToday();
+if (localStorage.getItem(STORAGE_KEY) === null) {
+  // 샘플 데이터
+  var sample = {
+    employees: [
+      { id: 'EMP001', name: '홍길동', team: '개발1팀', token: 'sample_tok_001', registered: getToday(), active: true },
+      { id: 'EMP002', name: '김철수', team: '개발1팀', token: 'sample_tok_002', registered: getToday(), active: true },
+      { id: 'EMP003', name: '이영희', team: '디자인팀', token: 'sample_tok_003', registered: getToday(), active: true },
+      { id: 'EMP004', name: '박민수', team: '마케팅팀', token: 'sample_tok_004', registered: getToday(), active: true }
+    ],
+    records: [
+      { date: getToday(), empId: 'EMP001', name: '홍길동', team: '개발1팀', time: '06:50:23', status: '출석', reason: '', method: 'QR' },
+      { date: getToday(), empId: 'EMP002', name: '김철수', team: '개발1팀', time: '07:05:44', status: '지각', reason: '교통체증', method: 'QR' },
+      { date: getToday(), empId: 'EMP003', name: '이영희', team: '디자인팀', time: '08:30:12', status: '결석', reason: '병가', method: 'QR' }
+    ],
+    settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' },
+    nextId: 5
+  };
+  saveData(sample);
+}
+
+// URL 파라미터로 토큰이 전달된 경우 (QR 스캔 결과)
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var token = params.get('token');
+  if (token) {
+    setTimeout(function() {
+      showEmployee(token);
+      document.querySelector('[data-tab="checkin"]').click();
+    }, 300);
+  }
+})();
+</script>
+</body>
+</html>
