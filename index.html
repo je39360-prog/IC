@@ -238,15 +238,22 @@ body{background:#fff}
   <div class="card" style="text-align:center">
     <div class="logo"><i class="fas fa-clock"></i></div>
     <h1 style="font-size:20px;margin-bottom:4px">아침 조회 출석 체크</h1>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">PC에 표시된 QR 코드를 스마트폰으로 스캔하세요</p>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">QR 코드를 스캔하여 출석 체크를 진행하세요</p>
 
     <!-- QR 링크로 접근 전 기본 안내 화면 -->
     <div id="checkinGuide">
-      <div style="background:var(--border-light);border-radius:var(--radius);padding:24px 16px;margin-bottom:16px">
-        <i class="fas fa-qrcode" style="font-size:48px;color:var(--primary);display:block;margin-bottom:12px"></i>
-        <p style="font-size:14px;font-weight:600;margin-bottom:6px">스마트폰 카메라로 QR 스캔</p>
-        <p style="font-size:12px;color:var(--text2)">관리자 PC의 <strong>QR출력</strong> 메뉴에서 당일 QR 코드를<br>확인한 후 스마트폰 카메라로 스캔하세요</p>
+      <div class="scanner-wrap" id="scannerWrap" style="display:none">
+        <video id="video" autoplay muted playsinline webkit-playsinline="true"></video>
+        <canvas id="canvas" style="display:none"></canvas>
+        <div class="scanner-overlay"></div>
+        <div class="scanner-hint"><i class="fas fa-qrcode"></i> QR 코드를 화면에 맞춰주세요</div>
       </div>
+
+      <div style="display:flex;gap:8px;margin-bottom:4px">
+        <button class="btn btn-p btn-block" id="scanToggle" onclick="toggleScanner()"><i class="fas fa-camera"></i> <span>카메라 스캔</span></button>
+      </div>
+      <p style="font-size:10px;color:var(--text3);margin-bottom:12px"><i class="fas fa-info-circle"></i> 카메라 권한 요청 시 <strong>허용</strong>을 선택해주세요</p>
+
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;color:var(--text3);font-size:12px">
         <span style="flex:1;height:1px;background:var(--border)"></span>
         <span>또는 직접 입력</span>
@@ -547,6 +554,85 @@ function extractToken(url) {
   if (m) return decodeURIComponent(m[1]);
   if (url.length > 5 && url.indexOf('http') === -1) return url;
   return null;
+}
+
+// ============================================================
+// QR SCANNER
+// ============================================================
+var scanning = false, scanStream = null, scanInterval = null;
+
+function toggleScanner() {
+  if (scanning) { stopScanner(); return; }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    toast('이 브라우저에서는 카메라를 지원하지 않거나 보안 연결(HTTPS)이 필요합니다.');
+    return;
+  }
+  var wrap = document.getElementById('scannerWrap');
+  var btn = document.getElementById('scanToggle');
+  wrap.style.display = 'block';
+  btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
+  scanning = true;
+
+  tryCam('environment');
+
+  function tryCam(facing) {
+    var constraints = { audio: false, video: { width: { ideal: 640 }, height: { ideal: 480 } } };
+    if (facing) constraints.video.facingMode = facing;
+    navigator.mediaDevices.getUserMedia(constraints)
+      .then(function(stream) {
+        scanStream = stream;
+        var v = document.getElementById('video');
+        v.srcObject = stream;
+        v.setAttribute('playsinline', true);
+        v.muted = true;
+        v.play().catch(function(){});
+        scanInterval = setInterval(scanFrame, 400);
+      })
+      .catch(function(err) {
+        if (facing === 'environment') { tryCam(null); return; }
+        var msg = '카메라를 열 수 없습니다.';
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') msg = '카메라 권한이 거부되었습니다.\n브라우저 설정에서 허용해주세요.';
+        else if (err.name === 'NotFoundError') msg = '카메라를 찾을 수 없습니다.';
+        else if (err.name === 'NotReadableError') msg = '카메라가 다른 앱에서 사용 중입니다.';
+        toast(msg);
+        stopScanner();
+      });
+  }
+}
+
+function stopScanner() {
+  var wrap = document.getElementById('scannerWrap');
+  var btn = document.getElementById('scanToggle');
+  if (wrap) wrap.style.display = 'none';
+  if (btn) btn.innerHTML = '<i class="fas fa-camera"></i> <span>카메라 스캔</span>';
+  scanning = false;
+  if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+  if (scanStream) { scanStream.getTracks().forEach(function(t) { t.stop(); }); scanStream = null; }
+}
+
+function scanFrame() {
+  var v = document.getElementById('video');
+  var c = document.getElementById('canvas');
+  if (!v || v.readyState < v.HAVE_ENOUGH_DATA) return;
+  c.width = v.videoWidth; c.height = v.videoHeight;
+  var ctx = c.getContext('2d');
+  ctx.drawImage(v, 0, 0, c.width, c.height);
+  var img = ctx.getImageData(0, 0, c.width, c.height);
+  var code = jsQR(img.data, img.width, img.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    var daily = extractDailyToken(code.data);
+    if (daily) {
+      stopScanner();
+      if (isTodayDailyToken(daily)) {
+        showEmpSelect();
+      } else {
+        toast('오늘 날짜의 QR 코드가 아닙니다. 관리자에게 문의하세요.');
+      }
+      return;
+    }
+    var token = extractToken(code.data);
+    if (token) { stopScanner(); showEmployee(token); }
+  }
 }
 
 // ============================================================
