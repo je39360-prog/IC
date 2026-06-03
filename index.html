@@ -731,17 +731,34 @@ function confirmCheckinWithReason() {
 }
 
 function doCheckin(reason) {
-  var data = getData();
   var today = getToday();
   var time = getTimeStr();
   var hhmm = getHHMM();
   var status = getStatus(hhmm);
-
-  data.records.push({
+  var record = {
     date: today, empId: currentEmp.id, name: currentEmp.name, team: currentEmp.team,
     time: time, status: status, reason: reason, method: 'QR'
-  });
-  saveData(data);
+  };
+
+  // 로컬 데이터에 저장 (PC 직접 사용 or 모바일 자체 로컬)
+  var data = getData();
+  // 중복 체크
+  var already = data.records.some(function(r) { return r.date === today && r.empId === currentEmp.id; });
+  if (!already) {
+    data.records.push(record);
+    saveData(data);
+  }
+
+  // 모바일(mobileEmpList 모드)이면 pending queue에도 추가 → PC에서 폴링해서 반영
+  if (mobileEmpList) {
+    var QUEUE_KEY = 'attendance_pending_' + today;
+    var queue = [];
+    try { queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) {}
+    if (!queue.some(function(r) { return r.empId === record.empId; })) {
+      queue.push(record);
+    }
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  }
 
   var info = document.getElementById('employeeInfo');
   var result = document.getElementById('resultArea');
@@ -757,14 +774,11 @@ function doCheckin(reason) {
     '<div class="icon-big"><i class="fas ' + icon + '"></i></div>' +
     '<h2>' + msg + '</h2>' +
     '<div class="detail">' + currentEmp.name + ' · ' + currentEmp.team + '</div>' +
-    '<div class="time-box"><i class="far fa-clock"></i> ' + time + ' <span class="badge ' + status.toLowerCase() + '">' + status + '</span></div>' +
+    '<div class="time-box"><i class="far fa-clock"></i> ' + time + ' <span class="badge ' + (status==='출석'?'attend':status==='지각'?'late':'absent') + '">' + status + '</span></div>' +
     '<button class="btn btn-s" onclick="resetCheckin()"><i class="fas fa-redo"></i> 확인</button>' +
     '</div>';
 
-  if (navigator.vibrate) {
-    if (status === '출석') navigator.vibrate([100,50,100]);
-    else navigator.vibrate([100,50,50]);
-  }
+  if (navigator.vibrate) navigator.vibrate(status === '출석' ? [100,50,100] : [100,50,50]);
   currentEmp = null;
 }
 
@@ -1225,8 +1239,12 @@ function qrLock() {
 function renderDailyQR() {
   var today = getToday();
   var token = getDailyToken(today);
+  var data = getData();
+  var active = data.employees.filter(function(e) { return e.active !== false; });
+  // 직원 목록을 URL에 포함 (id|name|team 형태로 압축)
+  var empList = active.map(function(e) { return e.id + '|' + e.name + '|' + (e.team||''); }).join(',');
   var baseUrl = window.location.href.split('?')[0].split('#')[0];
-  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token) + '&emps=' + encodeURIComponent(empList);
   var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=' + encodeURIComponent(qrData);
 
   document.getElementById('dailyQRImg').src = qrSrc;
@@ -1238,8 +1256,11 @@ function renderDailyQR() {
 function printDailyQR() {
   var today = getToday();
   var token = getDailyToken(today);
+  var data = getData();
+  var active = data.employees.filter(function(e) { return e.active !== false; });
+  var empList = active.map(function(e) { return e.id + '|' + e.name + '|' + (e.team||''); }).join(',');
   var baseUrl = window.location.href.split('?')[0].split('#')[0];
-  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token) + '&emps=' + encodeURIComponent(empList);
   var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=10&data=' + encodeURIComponent(qrData);
   var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   var dayName = days[new Date(today).getDay()];
@@ -1253,6 +1274,19 @@ function printDailyQR() {
 // ============================================================
 // 직원 선택 (공용 QR 스캔 후)
 // ============================================================
+// 모바일에서 URL로 전달받은 직원 목록 (로컬 데이터 없을 때 사용)
+var mobileEmpList = null;
+
+function parseMobileEmps(empsParam) {
+  if (!empsParam) return null;
+  try {
+    return empsParam.split(',').map(function(s) {
+      var parts = s.split('|');
+      return { id: parts[0], name: parts[1], team: parts[2] || '' };
+    }).filter(function(e) { return e.id && e.name; });
+  } catch(e) { return null; }
+}
+
 function showEmpSelect() {
   document.getElementById('employeeInfo').classList.add('hide');
   document.getElementById('resultArea').classList.add('hide');
@@ -1268,13 +1302,18 @@ function closeEmpSelect() {
 }
 
 function renderEmpSelect() {
-  var data = getData();
   var today = getToday();
   var search = (document.getElementById('empSelectSearch').value || '').toLowerCase();
-  var checkedIds = {};
-  data.records.forEach(function(r) { if (r.date === today) checkedIds[r.empId] = r.status; });
 
-  var active = data.employees.filter(function(e) {
+  // 직원 목록: URL로 전달받은 목록 우선, 없으면 로컬 데이터
+  var localData = getData();
+  var empSource = (mobileEmpList && mobileEmpList.length > 0) ? mobileEmpList : localData.employees;
+
+  // 이미 출석한 ID 목록 (로컬 기록)
+  var checkedIds = {};
+  localData.records.forEach(function(r) { if (r.date === today) checkedIds[r.empId] = r.status; });
+
+  var active = empSource.filter(function(e) {
     if (e.active === false) return false;
     if (!search) return true;
     return e.name.toLowerCase().indexOf(search) !== -1 || (e.team||'').toLowerCase().indexOf(search) !== -1;
@@ -1283,8 +1322,9 @@ function renderEmpSelect() {
   // 팀별 그룹
   var teams = {};
   active.forEach(function(e) {
-    if (!teams[e.team]) teams[e.team] = [];
-    teams[e.team].push(e);
+    var team = e.team || '기타';
+    if (!teams[team]) teams[team] = [];
+    teams[team].push(e);
   });
 
   var grid = document.getElementById('empSelectGrid');
@@ -1413,8 +1453,12 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
 (function() {
   var params = new URLSearchParams(window.location.search);
   var daily = params.get('daily');
+  var emps = params.get('emps');
   var token = params.get('token');
+
   if (daily) {
+    // emps 파라미터가 있으면 모바일 직원 목록으로 세팅
+    if (emps) mobileEmpList = parseMobileEmps(decodeURIComponent(emps));
     setTimeout(function() {
       document.querySelector('[data-tab="checkin"]').click();
       document.getElementById('checkinGuide').classList.add('hide');
@@ -1429,6 +1473,28 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
       document.querySelector('[data-tab="checkin"]').click();
       showEmployee(token);
     }, 300);
+  }
+
+  // PC에서 모바일 출석 pending queue를 5초마다 반영
+  if (!daily) {
+    setInterval(function() {
+      var today = getToday();
+      var QUEUE_KEY = 'attendance_pending_' + today;
+      var queue = [];
+      try { queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) {}
+      if (queue.length === 0) return;
+      var data = getData();
+      var changed = false;
+      queue.forEach(function(r) {
+        var exists = data.records.some(function(x) { return x.date === r.date && x.empId === r.empId; });
+        if (!exists) { data.records.push(r); changed = true; }
+      });
+      if (changed) {
+        saveData(data);
+        // 관리자 탭이 열려있으면 현황 갱신
+        if (adminLoggedIn) loadTodayAdmin();
+      }
+    }, 5000);
   }
 })();
 </script>
