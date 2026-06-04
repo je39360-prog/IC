@@ -6,6 +6,28 @@
 <title>이천물류 출석 체크 시스템</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCZIH-rLo4K17wSsErE7fTbAS8ZPRz5lb8",
+  authDomain: "icheon-c270b.firebaseapp.com",
+  projectId: "icheon-c270b",
+  storageBucket: "icheon-c270b.firebasestorage.app",
+  messagingSenderId: "730095067165",
+  appId: "1:730095067165:web:a8cc46a7c3ddb7040d26f4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+window._db = db;
+window._fs = { doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc };
+
+// Firestore 준비 완료 알림
+window._dbReady = true;
+document.dispatchEvent(new Event('dbReady'));
+</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -467,21 +489,78 @@ body{background:#fff}
 
 <script>
 // ============================================================
-// DATA LAYER (localStorage 기반)
+// DATA LAYER — Firestore 기반 (PC/모바일 실시간 공유)
 // ============================================================
-const STORAGE_KEY = 'attendance_data';
+const STORAGE_KEY = 'attendance_data'; // 로컬 캐시용 (오프라인 대비)
+const DOC_ID = 'main';
 
-function getData() {
-  var raw = localStorage.getItem(STORAGE_KEY);
-  if (raw) {
-    try { return JSON.parse(raw); } catch(e) {}
-  }
+// 로컬 캐시: Firestore 응답 전 UI가 바로 뜨도록
+function _getCache() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
+}
+function _setCache(data) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function _defaultData() {
   return { employees: [], records: [], settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' }, nextId: 1 };
 }
 
-function saveData(data) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+// getData: 캐시 우선 반환 (동기), 백그라운드에서 Firestore 갱신
+function getData() {
+  return _getCache() || _defaultData();
 }
+
+// saveData: Firestore + 로컬 캐시 동시 저장
+async function saveData(data) {
+  _setCache(data);
+  if (!window._db) return;
+  try {
+    const { doc, setDoc } = window._fs;
+    await setDoc(doc(window._db, 'attendance', DOC_ID), data);
+  } catch(e) { console.error('Firestore 저장 실패:', e); }
+}
+
+// Firestore 실시간 리스너 — 다른 기기 변경 사항 즉시 반영
+function startFirestoreSync() {
+  if (!window._db) return;
+  const { doc, onSnapshot } = window._fs;
+  onSnapshot(doc(window._db, 'attendance', DOC_ID), function(snap) {
+    if (snap.exists()) {
+      var remote = snap.data();
+      _setCache(remote);
+      // UI 자동 갱신
+      if (window.adminLoggedIn) {
+        loadTodayAdmin();
+        renderEmployees();
+      }
+    }
+  });
+}
+
+// Firestore 준비되면 초기 데이터 로드 + 실시간 동기화 시작
+async function initFirestore() {
+  if (!window._db) return;
+  try {
+    const { doc, getDoc, setDoc } = window._fs;
+    const snap = await getDoc(doc(window._db, 'attendance', DOC_ID));
+    if (snap.exists()) {
+      _setCache(snap.data());
+    } else {
+      // 최초 실행: 로컬 캐시가 있으면 Firestore에 업로드, 없으면 기본값
+      var local = _getCache() || _defaultData();
+      await setDoc(doc(window._db, 'attendance', DOC_ID), local);
+      _setCache(local);
+    }
+    startFirestoreSync();
+    // 관리자 탭이 열려있으면 갱신
+    if (window.adminLoggedIn) { loadTodayAdmin(); renderEmployees(); }
+  } catch(e) { console.error('Firestore 초기화 실패:', e); }
+}
+
+// DB 준비 이벤트 감지
+document.addEventListener('dbReady', function() {
+  initFirestore();
+});
 
 function genId(data) {
   var used = {};
@@ -941,7 +1020,7 @@ function renderEmployees() {
   if (filtered.length === 0) tbody.innerHTML = '<tr><td colspan="6" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
 }
 
-function addEmployee() {
+async function addEmployee() {
   var name = document.getElementById('newName').value.trim();
   var team = document.getElementById('newTeam').value.trim();
   var car = document.getElementById('newCar').value.trim();
@@ -950,7 +1029,7 @@ function addEmployee() {
   var id = genId(data);
   var token = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   data.employees.push({ id: id, name: name, team: team, token: token, registered: getToday(), active: true, car: car });
-  saveData(data);
+  await saveData(data);
   document.getElementById('newName').value = '';
   document.getElementById('newTeam').value = '';
   document.getElementById('newCar').value = '';
@@ -959,28 +1038,26 @@ function addEmployee() {
   toast(name + '님이 추가되었습니다. (ID: ' + id + ')');
 }
 
-function toggleEmp(id) {
+async function toggleEmp(id) {
   var data = getData();
-  data.employees.forEach(function(e) {
-    if (e.id === id) e.active = (e.active === false);
-  });
-  saveData(data);
+  data.employees.forEach(function(e) { if (e.id === id) e.active = (e.active === false); });
+  await saveData(data);
   renderEmployees();
   loadTodayAdmin();
 }
 
-function regenQR(id) {
+async function regenQR(id) {
   if (!confirm('QR 코드를 재발급하면 기존 QR는 사용할 수 없습니다. 계속할까요?')) return;
   var data = getData();
   data.employees.forEach(function(e) {
     if (e.id === id) e.token = 'tok_' + Date.now() + '_' + Math.random().toString(36).slice(2,8);
   });
-  saveData(data);
+  await saveData(data);
   renderEmployees();
   toast('QR 코드가 재발급되었습니다.');
 }
 
-function deleteEmp(id) {
+async function deleteEmp(id) {
   var data = getData();
   var emp = null;
   data.employees.forEach(function(e) { if (e.id === id) emp = e; });
@@ -988,7 +1065,7 @@ function deleteEmp(id) {
   if (!confirm(emp.name + '님(' + id + ')을 정말 삭제하시겠습니까?\n삭제된 데이터는 복구할 수 없습니다.')) return;
   if (!confirm('최종 확인: ' + emp.name + '님을 삭제하시겠습니까?')) return;
   data.employees = data.employees.filter(function(e) { return e.id !== id; });
-  saveData(data);
+  await saveData(data);
   renderEmployees();
   loadTodayAdmin();
   toast(emp.name + '님이 삭제되었습니다.');
