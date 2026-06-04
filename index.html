@@ -6,7 +6,6 @@
 <title>이천물류 출석 체크 시스템</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -452,7 +451,7 @@ body{background:#fff}
 
       <div style="display:flex;justify-content:center;margin-bottom:16px">
         <div style="border:4px solid var(--primary);border-radius:16px;padding:12px;box-shadow:var(--shadow-lg);background:#fff">
-          <canvas id="dailyQRCanvas" style="width:220px;height:220px;display:block"></canvas>
+          <div id="dailyQRCanvas" style="width:220px;height:220px;display:flex;align-items:center;justify-content:center"></div>
         </div>
       </div>
 
@@ -1285,14 +1284,202 @@ function renderDailyQR() {
   var baseUrl = window.location.href.split('?')[0].split('#')[0];
   var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
 
-  var canvas = document.getElementById('dailyQRCanvas');
-  QRCode.toCanvas(canvas, qrData, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } }, function(err) {
-    if (err) { console.error('QR 생성 실패:', err); toast('QR 생성에 실패했습니다.'); }
-  });
+  var wrap = document.getElementById('dailyQRCanvas');
+  wrap.innerHTML = '';
+  var canvas = document.createElement('canvas');
+  canvas.width = 220; canvas.height = 220;
+  wrap.appendChild(canvas);
+  QRGen.draw(canvas, qrData);
 
   document.getElementById('qrDateLabel').textContent = today;
   var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   document.getElementById('qrDayLabel').textContent = '(' + days[new Date(today).getDay()] + ')';
+}
+
+// ============================================================
+// 순수 JS QR 코드 생성기 (외부 API 없음, 완전 내장)
+// ============================================================
+var QRGen = (function() {
+  // QR 버전3 M레벨 기준 alphanumeric/byte 인코딩
+  var GF = [], LOG = [], EXP = [];
+  (function() {
+    for (var i = 0; i < 256; i++) GF[i] = 0, LOG[i] = 0, EXP[i] = 0;
+    var x = 1;
+    for (var i = 0; i < 255; i++) { EXP[i] = x; LOG[x] = i; x = x * 2; if (x >= 256) x ^= 285; }
+    EXP[255] = EXP[0];
+  })();
+  function gmul(a, b) { if (a === 0 || b === 0) return 0; return EXP[(LOG[a] + LOG[b]) % 255]; }
+  function gpoly(n) {
+    var p = [1];
+    for (var i = 0; i < n; i++) {
+      var q = [1, EXP[i]];
+      var r = [];
+      for (var j = 0; j <= p.length; j++) r[j] = 0;
+      for (var j = 0; j < p.length; j++) for (var k = 0; k < q.length; k++) r[j+k] ^= gmul(p[j], q[k]);
+      p = r;
+    }
+    return p;
+  }
+  function gec(data, n) {
+    var gen = gpoly(n);
+    var msg = data.slice();
+    for (var i = 0; i < n; i++) msg.push(0);
+    for (var i = 0; i < data.length; i++) {
+      var c = msg[i];
+      if (c !== 0) for (var j = 0; j < gen.length; j++) msg[i+j] ^= gmul(gen[j], c);
+    }
+    return msg.slice(data.length);
+  }
+
+  // QR 버전별 파라미터 (버전 1~5 지원)
+  var VERSIONS = [
+    null,
+    { total:26,  data:16, ec:10 }, // v1 M
+    { total:44,  data:28, ec:16 }, // v2 M
+    { total:70,  data:44, ec:26 }, // v3 M
+    { total:100, data:64, ec:36 }, // v4 M
+    { total:134, data:86, ec:48 }, // v5 M
+  ];
+
+  function encode(str) {
+    var bytes = [];
+    for (var i = 0; i < str.length; i++) {
+      var c = str.charCodeAt(i);
+      if (c > 0x7FF) { bytes.push(0xEF, 0xBF, 0xBD); continue; }
+      if (c > 0x7F) { bytes.push(0xC0 | (c >> 6), 0x80 | (c & 63)); continue; }
+      bytes.push(c);
+    }
+    return bytes;
+  }
+
+  function buildData(str, ver) {
+    var bytes = encode(str);
+    var vp = VERSIONS[ver];
+    var bits = [];
+    function pushBits(v, n) { for (var i = n-1; i >= 0; i--) bits.push((v >> i) & 1); }
+    pushBits(4, 4); // byte mode
+    pushBits(bytes.length, 8);
+    for (var i = 0; i < bytes.length; i++) pushBits(bytes[i], 8);
+    // terminator
+    for (var i = 0; i < 4 && bits.length < vp.data * 8; i++) bits.push(0);
+    while (bits.length % 8) bits.push(0);
+    // pad bytes
+    var pad = [0xEC, 0x11], pi = 0;
+    while (bits.length < vp.data * 8) { pushBits(pad[pi % 2], 8); pi++; }
+    // to codewords
+    var cw = [];
+    for (var i = 0; i < bits.length; i += 8) {
+      var b = 0;
+      for (var j = 0; j < 8; j++) b = (b << 1) | bits[i+j];
+      cw.push(b);
+    }
+    var ec = gec(cw, vp.total - vp.data);
+    return cw.concat(ec);
+  }
+
+  // 버전 결정
+  function pickVer(str) {
+    var len = encode(str).length;
+    for (var v = 1; v <= 5; v++) { if (VERSIONS[v] && VERSIONS[v].data - 3 >= len) return v; }
+    return 5;
+  }
+
+  // QR 매트릭스 생성
+  function buildMatrix(str) {
+    var ver = pickVer(str);
+    var size = ver * 4 + 17;
+    var mat = [], res = []; // mat=값, res=reserved
+    for (var i = 0; i < size; i++) { mat[i] = []; res[i] = []; for (var j = 0; j < size; j++) { mat[i][j] = 0; res[i][j] = false; } }
+
+    function setFinder(r, c) {
+      for (var dr = -1; dr <= 7; dr++) for (var dc = -1; dc <= 7; dc++) {
+        var y = r+dr, x = c+dc;
+        if (y < 0 || y >= size || x < 0 || x >= size) continue;
+        res[y][x] = true;
+        var inSquare = dr >= 0 && dr <= 6 && dc >= 0 && dc <= 6;
+        var onBorder = dr === 0 || dr === 6 || dc === 0 || dc === 6;
+        var inInner  = dr >= 2 && dr <= 4 && dc >= 2 && dc <= 4;
+        mat[y][x] = (inSquare && (onBorder || inInner)) ? 1 : 0;
+      }
+    }
+    setFinder(0, 0); setFinder(0, size-7); setFinder(size-7, 0);
+
+    // timing
+    for (var i = 8; i < size-8; i++) { res[6][i] = res[i][6] = true; mat[6][i] = mat[i][6] = i % 2 === 0 ? 1 : 0; }
+
+    // dark module
+    mat[size-8][8] = 1; res[size-8][8] = true;
+
+    // format info (mask 0, M level = 00)
+    var fmt = [1,1,1,0,1,1,1,1,1,0,0,0,1,0,0]; // precomputed for M, mask0
+    var fmtPos = [[8,0],[8,1],[8,2],[8,3],[8,4],[8,5],[8,7],[8,8],[7,8],[5,8],[4,8],[3,8],[2,8],[1,8],[0,8]];
+    for (var i = 0; i < 15; i++) {
+      var r = fmtPos[i][0], c = fmtPos[i][1];
+      mat[r][c] = fmt[i]; res[r][c] = true;
+      // mirror
+      if (i < 7) { mat[r][size-1-c] = fmt[i]; res[r][size-1-c] = true; }
+      else { mat[size-15+i][c] = fmt[i]; res[size-15+i][c] = true; }
+    }
+
+    // data placement
+    var data = buildData(str, ver);
+    var bits = [];
+    for (var i = 0; i < data.length; i++) for (var j = 7; j >= 0; j--) bits.push((data[i] >> j) & 1);
+    var bi = 0;
+    var col = size - 1;
+    while (col > 0) {
+      if (col === 6) col--;
+      for (var row = 0; row < size; row++) {
+        var r = (Math.floor((size-1-col) / 2) % 2 === 0) ? size-1-row : row;
+        for (var d = 0; d < 2; d++) {
+          var c = col - d;
+          if (!res[r][c] && bi < bits.length) {
+            mat[r][c] = bits[bi++] ^ 0; // mask 0: (row+col)%2==0 → invert
+            if ((r + c) % 2 === 0) mat[r][c] ^= 1;
+          }
+        }
+      }
+      col -= 2;
+    }
+    return { matrix: mat, size: size };
+  }
+
+  return {
+    draw: function(canvas, text) {
+      try {
+        var qr = buildMatrix(text);
+        var sz = qr.size;
+        var scale = Math.floor(canvas.width / (sz + 8));
+        var off = Math.floor((canvas.width - sz * scale) / 2);
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        for (var r = 0; r < sz; r++) for (var c = 0; c < sz; c++) {
+          if (qr.matrix[r][c]) ctx.fillRect(off + c * scale, off + r * scale, scale, scale);
+        }
+      } catch(e) {
+        console.error('QR draw error', e);
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#f0f2f5';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#ea4335';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('QR 생성 실패', canvas.width/2, canvas.height/2);
+      }
+    },
+    toDataURL: function(text, size) {
+      var c = document.createElement('canvas');
+      c.width = c.height = size || 300;
+      this.draw(c, text);
+      return c.toDataURL();
+    }
+  };
+})();
+
+function drawQR(canvas, text) {
+  QRGen.draw(canvas, text);
 }
 
 function printDailyQR() {
@@ -1302,16 +1489,13 @@ function printDailyQR() {
   var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
   var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   var dayName = days[new Date(today).getDay()];
+  var dataUrl = QRGen.toDataURL(qrData, 500);
 
-  // qrcode.js로 Data URL 생성 후 인쇄
-  QRCode.toDataURL(qrData, { width: 500, margin: 2 }, function(err, url) {
-    if (err) { toast('QR 생성에 실패했습니다.'); return; }
-    var w = window.open('', '_blank');
-    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>당일 출석 QR</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}.wrap{text-align:center;padding:40px}.logo{font-size:22px;font-weight:700;color:#1a73e8;margin-bottom:6px}.sub{font-size:14px;color:#666;margin-bottom:24px}.qr-border{display:inline-block;border:6px solid #1a73e8;border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12)}.qr-border img{width:300px;height:300px;display:block}.date{margin-top:20px;font-size:18px;font-weight:700;color:#202124}.notice{margin-top:10px;font-size:12px;color:#ea4335;font-weight:600}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>');
-    w.document.write('<div class="wrap"><div class="logo">이천물류 아침 조회 출석 체크</div><div class="sub">아래 QR 코드를 스캔하여 출석을 체크하세요</div><div class="qr-border"><img src="' + url + '" alt="QR"></div><div class="date">' + today + ' (' + dayName + ')</div><div class="notice">⚠ 이 QR 코드는 오늘 하루만 유효합니다</div></div></body></html>');
-    w.document.close();
-    setTimeout(function() { w.print(); }, 500);
-  });
+  var w = window.open('', '_blank');
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>당일 출석 QR</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}.wrap{text-align:center;padding:40px}.logo{font-size:22px;font-weight:700;color:#1a73e8;margin-bottom:6px}.sub{font-size:14px;color:#666;margin-bottom:24px}.qr-border{display:inline-block;border:6px solid #1a73e8;border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12)}.qr-border img{width:300px;height:300px;display:block;image-rendering:pixelated}.date{margin-top:20px;font-size:18px;font-weight:700;color:#202124}.notice{margin-top:10px;font-size:12px;color:#ea4335;font-weight:600}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>');
+  w.document.write('<div class="wrap"><div class="logo">이천물류 아침 조회 출석 체크</div><div class="sub">아래 QR 코드를 스캔하여 출석을 체크하세요</div><div class="qr-border"><img src="' + dataUrl + '"></div><div class="date">' + today + ' (' + dayName + ')</div><div class="notice">⚠ 이 QR 코드는 오늘 하루만 유효합니다</div></div></body></html>');
+  w.document.close();
+  setTimeout(function() { w.print(); }, 300);
 }
 
 // ============================================================
