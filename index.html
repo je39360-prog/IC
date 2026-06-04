@@ -578,17 +578,19 @@ function getStatus(timeStr) {
 // ============================================================
 // NAVIGATION
 // ============================================================
-document.querySelectorAll('.nav-btn').forEach(function(btn) {
-  btn.addEventListener('click', function() {
-    document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
-    this.classList.add('active');
-    document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
-    document.getElementById('tab-' + this.dataset.tab).classList.add('active');
-    if (this.dataset.tab === 'admin' && document.getElementById('adminPanel').classList.contains('hide') === false) {
-      loadTodayAdmin();
-    }
-    if (this.dataset.tab === 'report') renderReport();
-    if (this.dataset.tab === 'qrprint') renderQRGrid();
+document.addEventListener('DOMContentLoaded', function() {
+  document.querySelectorAll('.nav-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.nav-btn').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+      document.getElementById('tab-' + this.dataset.tab).classList.add('active');
+      if (this.dataset.tab === 'admin' && document.getElementById('adminPanel').classList.contains('hide') === false) {
+        loadTodayAdmin();
+      }
+      if (this.dataset.tab === 'report') renderReport();
+      if (this.dataset.tab === 'qrprint') renderQRGrid();
+    });
   });
 });
 
@@ -837,11 +839,13 @@ function updateClock() {
     de.textContent = now.getFullYear() + '년 ' + String(now.getMonth()+1).padStart(2,'0') + '월 ' + String(now.getDate()).padStart(2,'0') + '일 ' + days[now.getDay()];
   }
 }
-setInterval(updateClock, 1000);
-updateClock();
 
-document.getElementById('manualToken').addEventListener('keypress', function(e) {
-  if (e.key === 'Enter') manualCheckin();
+document.addEventListener('DOMContentLoaded', function() {
+  setInterval(updateClock, 1000);
+  updateClock();
+  document.getElementById('manualToken').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') manualCheckin();
+  });
 });
 
 // ============================================================
@@ -1068,8 +1072,10 @@ async function saveCarNumber() {
 }
 
 // 모달 외부 클릭 시 닫기
-document.getElementById('carModal').addEventListener('click', function(e) {
-  if (e.target === this) closeCarModal();
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('carModal').addEventListener('click', function(e) {
+    if (e.target === this) closeCarModal();
+  });
 });
 
 function initStatDates() {
@@ -1323,9 +1329,39 @@ function parseMobileEmps(empsParam) {
   } catch(e) { return null; }
 }
 
+var MY_EMP_KEY = 'my_employee';
+
+function getSavedEmp() {
+  try { return JSON.parse(localStorage.getItem(MY_EMP_KEY) || 'null'); } catch(e) { return null; }
+}
+
+function saveMyEmp(emp) {
+  localStorage.setItem(MY_EMP_KEY, JSON.stringify({ id: emp.id, name: emp.name, team: emp.team }));
+}
+
+function clearMyEmp() {
+  localStorage.removeItem(MY_EMP_KEY);
+}
+
 function showEmpSelect() {
   document.getElementById('employeeInfo').classList.add('hide');
   document.getElementById('resultArea').classList.add('hide');
+
+  // 저장된 본인 정보가 있으면 바로 출석화면으로
+  var saved = getSavedEmp();
+  if (saved) {
+    // 저장된 직원이 현재 목록에 실제로 존재하는지 확인
+    var localData = getData();
+    var empSource = (mobileEmpList && mobileEmpList.length > 0) ? mobileEmpList : localData.employees;
+    var found = empSource.find(function(e) { return e.id === saved.id; });
+    if (found) {
+      showSavedEmpConfirm(found);
+      return;
+    } else {
+      clearMyEmp(); // 더 이상 존재하지 않는 직원이면 삭제
+    }
+  }
+
   var area = document.getElementById('empSelectArea');
   area.classList.remove('hide');
   document.getElementById('empSelectSearch').value = '';
@@ -1397,7 +1433,47 @@ function renderEmpSelect() {
   });
 }
 
+function showSavedEmpConfirm(emp) {
+  // 본인 확인 팝업 — 맞으면 바로 출석, 아니면 목록으로
+  var area = document.getElementById('empSelectArea');
+  area.classList.remove('hide');
+  document.getElementById('empSelectSearch').value = '';
+
+  var grid = document.getElementById('empSelectGrid');
+  grid.innerHTML =
+    '<div style="grid-column:1/-1;text-align:center;padding:16px 8px">' +
+      '<div style="font-size:13px;color:var(--text2);margin-bottom:14px"><i class="fas fa-user-check" style="color:var(--primary)"></i> 저장된 정보로 출석하시겠습니까?</div>' +
+      '<div style="background:var(--border-light);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">' +
+        '<div style="font-size:22px;font-weight:700;margin-bottom:4px">' + emp.name + '</div>' +
+        '<div style="font-size:13px;color:var(--text2)">' + emp.team + '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="btn btn-p" style="flex:2" onclick="confirmSavedEmp()"><i class="fas fa-check"></i> 네, 맞습니다</button>' +
+        '<button class="btn btn-s" style="flex:1" onclick="changeSavedEmp()"><i class="fas fa-exchange-alt"></i> 변경</button>' +
+      '</div>' +
+    '</div>';
+
+  window._savedEmpToConfirm = emp;
+}
+
+function confirmSavedEmp() {
+  if (window._savedEmpToConfirm) {
+    selectEmpForCheckin(window._savedEmpToConfirm);
+    window._savedEmpToConfirm = null;
+  }
+}
+
+function changeSavedEmp() {
+  clearMyEmp();
+  window._savedEmpToConfirm = null;
+  document.getElementById('empSelectSearch').value = '';
+  renderEmpSelect();
+}
+
 function selectEmpForCheckin(emp) {
+  // 이 기기에 본인 정보 저장
+  saveMyEmp(emp);
+
   closeEmpSelect();
   currentEmp = emp;
   var info = document.getElementById('employeeInfo');
@@ -1458,35 +1534,31 @@ function toast(msg) {
 // ============================================================
 // ADMIN PASSWORD CHANGE (localStorage)
 // ============================================================
-// 기본 비밀번호: 0743
-// 변경하려면 브라우저 콘솔에서: localStorage.setItem('attendance_admin_pw', '1234')
-
+// INIT
 // ============================================================
-// INIT: 날짜 기본값
-// ============================================================
-document.getElementById('reportDate').value = getToday();
-if (localStorage.getItem(STORAGE_KEY) === null) {
-  // 샘플 데이터
-  var sample = {
-    employees: [
-      { id: 'EMP001', name: '홍길동', team: '개발1팀', token: 'sample_tok_001', registered: getToday(), active: true },
-      { id: 'EMP002', name: '김철수', team: '개발1팀', token: 'sample_tok_002', registered: getToday(), active: true },
-      { id: 'EMP003', name: '이영희', team: '디자인팀', token: 'sample_tok_003', registered: getToday(), active: true },
-      { id: 'EMP004', name: '박민수', team: '마케팅팀', token: 'sample_tok_004', registered: getToday(), active: true }
-    ],
-    records: [
-      { date: getToday(), empId: 'EMP001', name: '홍길동', team: '개발1팀', time: '06:50:23', status: '출석', reason: '', method: 'QR' },
-      { date: getToday(), empId: 'EMP002', name: '김철수', team: '개발1팀', time: '07:05:44', status: '지각', reason: '교통체증', method: 'QR' },
-      { date: getToday(), empId: 'EMP003', name: '이영희', team: '디자인팀', time: '08:30:12', status: '결석', reason: '병가', method: 'QR' }
-    ],
-    settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' },
-    nextId: 5
-  };
-  saveData(sample);
-}
+document.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('reportDate').value = getToday();
 
-// URL 파라미터로 토큰이 전달된 경우 (QR 스캔 결과)
-(function() {
+  if (localStorage.getItem(STORAGE_KEY) === null) {
+    var sample = {
+      employees: [
+        { id: 'EMP001', name: '홍길동', team: '개발1팀', token: 'sample_tok_001', registered: getToday(), active: true },
+        { id: 'EMP002', name: '김철수', team: '개발1팀', token: 'sample_tok_002', registered: getToday(), active: true },
+        { id: 'EMP003', name: '이영희', team: '디자인팀', token: 'sample_tok_003', registered: getToday(), active: true },
+        { id: 'EMP004', name: '박민수', team: '마케팅팀', token: 'sample_tok_004', registered: getToday(), active: true }
+      ],
+      records: [
+        { date: getToday(), empId: 'EMP001', name: '홍길동', team: '개발1팀', time: '06:50:23', status: '출석', reason: '', method: 'QR' },
+        { date: getToday(), empId: 'EMP002', name: '김철수', team: '개발1팀', time: '07:05:44', status: '지각', reason: '교통체증', method: 'QR' },
+        { date: getToday(), empId: 'EMP003', name: '이영희', team: '디자인팀', time: '08:30:12', status: '결석', reason: '병가', method: 'QR' }
+      ],
+      settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' },
+      nextId: 5
+    };
+    saveData(sample);
+  }
+
+  // URL 파라미터 처리 (QR 스캔 결과)
   var params = new URLSearchParams(window.location.search);
   var daily = params.get('daily');
   var emps = params.get('emps');
@@ -1509,7 +1581,7 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
       showEmployee(token);
     }, 300);
   }
-})();
+});
 
 // ============================================================
 // 전역 노출 — type="module" 스코프 밖 onclick에서 접근 가능하도록
@@ -1521,6 +1593,8 @@ window.closeCarModal        = closeCarModal;
 window.closeEmpSelect       = closeEmpSelect;
 window.confirmCheckin       = confirmCheckin;
 window.confirmCheckinWithReason = confirmCheckinWithReason;
+window.confirmSavedEmp      = confirmSavedEmp;
+window.changeSavedEmp       = changeSavedEmp;
 window.deleteEmp            = deleteEmp;
 window.exportCSV            = exportCSV;
 window.loadStats            = loadStats;
