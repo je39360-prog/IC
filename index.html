@@ -1510,6 +1510,32 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
     }, 300);
   }
 })();
+
+// ============================================================
+// 전역 노출 — type="module" 스코프 밖 onclick에서 접근 가능하도록
+// ============================================================
+window.addEmployee          = addEmployee;
+window.adminLogin           = adminLogin;
+window.adminLogout          = adminLogout;
+window.closeCarModal        = closeCarModal;
+window.closeEmpSelect       = closeEmpSelect;
+window.confirmCheckin       = confirmCheckin;
+window.confirmCheckinWithReason = confirmCheckinWithReason;
+window.deleteEmp            = deleteEmp;
+window.exportCSV            = exportCSV;
+window.loadStats            = loadStats;
+window.manualCheckin        = manualCheckin;
+window.openCarModal         = openCarModal;
+window.printDailyQR         = printDailyQR;
+window.qrLock               = qrLock;
+window.qrUnlock             = qrUnlock;
+window.regenQR              = regenQR;
+window.renderReport         = renderReport;
+window.resetCheckin         = resetCheckin;
+window.saveCarNumber        = saveCarNumber;
+window.switchAdminTab       = switchAdminTab;
+window.toggleEmp            = toggleEmp;
+window.toggleScanner        = toggleScanner;
 </script>
 </body>
 </html>
