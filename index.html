@@ -6,6 +6,7 @@
 <title>이천물류 출석 체크 시스템</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -451,7 +452,7 @@ body{background:#fff}
 
       <div style="display:flex;justify-content:center;margin-bottom:16px">
         <div style="border:4px solid var(--primary);border-radius:16px;padding:12px;box-shadow:var(--shadow-lg);background:#fff">
-          <img id="dailyQRImg" src="" alt="QR" style="width:220px;height:220px;display:block">
+          <canvas id="dailyQRCanvas" style="width:220px;height:220px;display:block"></canvas>
         </div>
       </div>
 
@@ -1281,15 +1282,14 @@ function qrLock() {
 function renderDailyQR() {
   var today = getToday();
   var token = getDailyToken(today);
-  var data = getData();
-  var active = data.employees.filter(function(e) { return e.active !== false; });
-  // 직원 목록을 URL에 포함 (id|name|team 형태로 압축)
-  var empList = active.map(function(e) { return e.id + '|' + e.name + '|' + (e.team||''); }).join(',');
   var baseUrl = window.location.href.split('?')[0].split('#')[0];
-  var qrData = baseUrl + '?daily=' + encodeURIComponent(token) + '&emps=' + encodeURIComponent(empList);
-  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&margin=10&data=' + encodeURIComponent(qrData);
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
 
-  document.getElementById('dailyQRImg').src = qrSrc;
+  var canvas = document.getElementById('dailyQRCanvas');
+  QRCode.toCanvas(canvas, qrData, { width: 220, margin: 1, color: { dark: '#000000', light: '#ffffff' } }, function(err) {
+    if (err) { console.error('QR 생성 실패:', err); toast('QR 생성에 실패했습니다.'); }
+  });
+
   document.getElementById('qrDateLabel').textContent = today;
   var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   document.getElementById('qrDayLabel').textContent = '(' + days[new Date(today).getDay()] + ')';
@@ -1298,19 +1298,20 @@ function renderDailyQR() {
 function printDailyQR() {
   var today = getToday();
   var token = getDailyToken(today);
-  var data = getData();
-  var active = data.employees.filter(function(e) { return e.active !== false; });
-  var empList = active.map(function(e) { return e.id + '|' + e.name + '|' + (e.team||''); }).join(',');
   var baseUrl = window.location.href.split('?')[0].split('#')[0];
-  var qrData = baseUrl + '?daily=' + encodeURIComponent(token) + '&emps=' + encodeURIComponent(empList);
-  var qrSrc = 'https://api.qrserver.com/v1/create-qr-code/?size=500x500&margin=10&data=' + encodeURIComponent(qrData);
+  var qrData = baseUrl + '?daily=' + encodeURIComponent(token);
   var days = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
   var dayName = days[new Date(today).getDay()];
-  var w = window.open('', '_blank');
-  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>당일 출석 QR</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}.wrap{text-align:center;padding:40px}.logo{font-size:22px;font-weight:700;color:#1a73e8;margin-bottom:6px}.sub{font-size:14px;color:#666;margin-bottom:24px}.qr-border{display:inline-block;border:6px solid #1a73e8;border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12)}.qr-border img{width:300px;height:300px;display:block}.date{margin-top:20px;font-size:18px;font-weight:700;color:#202124}.notice{margin-top:10px;font-size:12px;color:#ea4335;font-weight:600}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>');
-  w.document.write('<div class="wrap"><div class="logo">이천물류 아침 조회 출석 체크</div><div class="sub">아래 QR 코드를 스캔하여 출석을 체크하세요</div><div class="qr-border"><img src="' + qrSrc + '" alt="QR"></div><div class="date">' + today + ' (' + dayName + ')</div><div class="notice">⚠ 이 QR 코드는 오늘 하루만 유효합니다</div></div></body></html>');
-  w.document.close();
-  setTimeout(function() { w.print(); }, 1200);
+
+  // qrcode.js로 Data URL 생성 후 인쇄
+  QRCode.toDataURL(qrData, { width: 500, margin: 2 }, function(err, url) {
+    if (err) { toast('QR 생성에 실패했습니다.'); return; }
+    var w = window.open('', '_blank');
+    w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>당일 출석 QR</title><style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:Malgun Gothic,Apple SD Gothic Neo,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#fff}.wrap{text-align:center;padding:40px}.logo{font-size:22px;font-weight:700;color:#1a73e8;margin-bottom:6px}.sub{font-size:14px;color:#666;margin-bottom:24px}.qr-border{display:inline-block;border:6px solid #1a73e8;border-radius:16px;padding:16px;box-shadow:0 8px 32px rgba(0,0,0,.12)}.qr-border img{width:300px;height:300px;display:block}.date{margin-top:20px;font-size:18px;font-weight:700;color:#202124}.notice{margin-top:10px;font-size:12px;color:#ea4335;font-weight:600}@media print{body{-webkit-print-color-adjust:exact}}</style></head><body>');
+    w.document.write('<div class="wrap"><div class="logo">이천물류 아침 조회 출석 체크</div><div class="sub">아래 QR 코드를 스캔하여 출석을 체크하세요</div><div class="qr-border"><img src="' + url + '" alt="QR"></div><div class="date">' + today + ' (' + dayName + ')</div><div class="notice">⚠ 이 QR 코드는 오늘 하루만 유효합니다</div></div></body></html>');
+    w.document.close();
+    setTimeout(function() { w.print(); }, 500);
+  });
 }
 
 // ============================================================
@@ -1561,11 +1562,9 @@ document.addEventListener('DOMContentLoaded', function() {
   // URL 파라미터 처리 (QR 스캔 결과)
   var params = new URLSearchParams(window.location.search);
   var daily = params.get('daily');
-  var emps = params.get('emps');
   var token = params.get('token');
 
   if (daily) {
-    if (emps) mobileEmpList = parseMobileEmps(decodeURIComponent(emps));
     setTimeout(function() {
       document.querySelector('[data-tab="checkin"]').click();
       document.getElementById('checkinGuide').classList.add('hide');
