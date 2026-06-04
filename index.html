@@ -6,28 +6,6 @@
 <title>이천물류 출석 체크 시스템</title>
 <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script type="module">
-import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
-
-const firebaseConfig = {
-  apiKey: "AIzaSyCZIH-rLo4K17wSsErE7fTbAS8ZPRz5lb8",
-  authDomain: "icheon-c270b.firebaseapp.com",
-  projectId: "icheon-c270b",
-  storageBucket: "icheon-c270b.firebasestorage.app",
-  messagingSenderId: "730095067165",
-  appId: "1:730095067165:web:a8cc46a7c3ddb7040d26f4"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-window._db = db;
-window._fs = { doc, getDoc, setDoc, onSnapshot, collection, addDoc, query, where, getDocs, updateDoc, deleteDoc };
-
-// Firestore 준비 완료 알림
-window._dbReady = true;
-document.dispatchEvent(new Event('dbReady'));
-</script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -487,14 +465,31 @@ body{background:#fff}
   </div>
 </div>
 
-<script>
+<script type="module">
+// ============================================================
+// FIREBASE 초기화
+// ============================================================
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCZIH-rLo4K17wSsErE7fTbAS8ZPRz5lb8",
+  authDomain: "icheon-c270b.firebaseapp.com",
+  projectId: "icheon-c270b",
+  storageBucket: "icheon-c270b.firebasestorage.app",
+  messagingSenderId: "730095067165",
+  appId: "1:730095067165:web:a8cc46a7c3ddb7040d26f4"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 // ============================================================
 // DATA LAYER — Firestore 기반 (PC/모바일 실시간 공유)
 // ============================================================
-const STORAGE_KEY = 'attendance_data'; // 로컬 캐시용 (오프라인 대비)
+const STORAGE_KEY = 'attendance_data';
 const DOC_ID = 'main';
 
-// 로컬 캐시: Firestore 응답 전 UI가 바로 뜨도록
 function _getCache() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null'); } catch(e) { return null; }
 }
@@ -505,62 +500,39 @@ function _defaultData() {
   return { employees: [], records: [], settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' }, nextId: 1 };
 }
 
-// getData: 캐시 우선 반환 (동기), 백그라운드에서 Firestore 갱신
 function getData() {
   return _getCache() || _defaultData();
 }
 
-// saveData: Firestore + 로컬 캐시 동시 저장
 async function saveData(data) {
   _setCache(data);
-  if (!window._db) return;
   try {
-    const { doc, setDoc } = window._fs;
-    await setDoc(doc(window._db, 'attendance', DOC_ID), data);
-  } catch(e) { console.error('Firestore 저장 실패:', e); }
+    await setDoc(doc(db, 'attendance', DOC_ID), data);
+  } catch(e) { console.error('Firestore 저장 실패:', e); toast('저장 중 오류가 발생했습니다.'); }
 }
 
-// Firestore 실시간 리스너 — 다른 기기 변경 사항 즉시 반영
-function startFirestoreSync() {
-  if (!window._db) return;
-  const { doc, onSnapshot } = window._fs;
-  onSnapshot(doc(window._db, 'attendance', DOC_ID), function(snap) {
-    if (snap.exists()) {
-      var remote = snap.data();
-      _setCache(remote);
-      // UI 자동 갱신
-      if (window.adminLoggedIn) {
-        loadTodayAdmin();
-        renderEmployees();
-      }
-    }
-  });
-}
+// Firestore 실시간 리스너 — 다른 기기 변경 즉시 반영
+onSnapshot(doc(db, 'attendance', DOC_ID), function(snap) {
+  if (snap.exists()) {
+    _setCache(snap.data());
+    if (adminLoggedIn) { loadTodayAdmin(); renderEmployees(); }
+  }
+});
 
-// Firestore 준비되면 초기 데이터 로드 + 실시간 동기화 시작
-async function initFirestore() {
-  if (!window._db) return;
+// 최초 실행: Firestore 데이터 로드 또는 초기값 업로드
+(async function initFirestore() {
   try {
-    const { doc, getDoc, setDoc } = window._fs;
-    const snap = await getDoc(doc(window._db, 'attendance', DOC_ID));
+    const snap = await getDoc(doc(db, 'attendance', DOC_ID));
     if (snap.exists()) {
       _setCache(snap.data());
     } else {
-      // 최초 실행: 로컬 캐시가 있으면 Firestore에 업로드, 없으면 기본값
-      var local = _getCache() || _defaultData();
-      await setDoc(doc(window._db, 'attendance', DOC_ID), local);
+      const local = _getCache() || _defaultData();
+      await setDoc(doc(db, 'attendance', DOC_ID), local);
       _setCache(local);
     }
-    startFirestoreSync();
-    // 관리자 탭이 열려있으면 갱신
-    if (window.adminLoggedIn) { loadTodayAdmin(); renderEmployees(); }
+    if (adminLoggedIn) { loadTodayAdmin(); renderEmployees(); }
   } catch(e) { console.error('Firestore 초기화 실패:', e); }
-}
-
-// DB 준비 이벤트 감지
-document.addEventListener('dbReady', function() {
-  initFirestore();
-});
+})();
 
 function genId(data) {
   var used = {};
@@ -809,7 +781,7 @@ function confirmCheckinWithReason() {
   doCheckin(reason);
 }
 
-function doCheckin(reason) {
+async function doCheckin(reason) {
   var today = getToday();
   var time = getTimeStr();
   var hhmm = getHHMM();
@@ -819,24 +791,11 @@ function doCheckin(reason) {
     time: time, status: status, reason: reason, method: 'QR'
   };
 
-  // 로컬 데이터에 저장 (PC 직접 사용 or 모바일 자체 로컬)
   var data = getData();
-  // 중복 체크
   var already = data.records.some(function(r) { return r.date === today && r.empId === currentEmp.id; });
   if (!already) {
     data.records.push(record);
-    saveData(data);
-  }
-
-  // 모바일(mobileEmpList 모드)이면 pending queue에도 추가 → PC에서 폴링해서 반영
-  if (mobileEmpList) {
-    var QUEUE_KEY = 'attendance_pending_' + today;
-    var queue = [];
-    try { queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) {}
-    if (!queue.some(function(r) { return r.empId === record.empId; })) {
-      queue.push(record);
-    }
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    await saveData(data);
   }
 
   var info = document.getElementById('employeeInfo');
@@ -1094,7 +1053,7 @@ function closeCarModal() {
   carTargetId = null;
 }
 
-function saveCarNumber() {
+async function saveCarNumber() {
   if (!carTargetId) return;
   var car = document.getElementById('carModalInput').value.trim();
   var data = getData();
@@ -1102,7 +1061,7 @@ function saveCarNumber() {
   data.employees.forEach(function(e) {
     if (e.id === carTargetId) { e.car = car; empName = e.name; }
   });
-  saveData(data);
+  await saveData(data);
   closeCarModal();
   renderEmployees();
   toast(empName + '님의 차량번호가 ' + (car ? car + '로 등록되었습니다.' : '삭제되었습니다.'));
@@ -1534,7 +1493,6 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
   var token = params.get('token');
 
   if (daily) {
-    // emps 파라미터가 있으면 모바일 직원 목록으로 세팅
     if (emps) mobileEmpList = parseMobileEmps(decodeURIComponent(emps));
     setTimeout(function() {
       document.querySelector('[data-tab="checkin"]').click();
@@ -1550,28 +1508,6 @@ if (localStorage.getItem(STORAGE_KEY) === null) {
       document.querySelector('[data-tab="checkin"]').click();
       showEmployee(token);
     }, 300);
-  }
-
-  // PC에서 모바일 출석 pending queue를 5초마다 반영
-  if (!daily) {
-    setInterval(function() {
-      var today = getToday();
-      var QUEUE_KEY = 'attendance_pending_' + today;
-      var queue = [];
-      try { queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch(e) {}
-      if (queue.length === 0) return;
-      var data = getData();
-      var changed = false;
-      queue.forEach(function(r) {
-        var exists = data.records.some(function(x) { return x.date === r.date && x.empId === r.empId; });
-        if (!exists) { data.records.push(r); changed = true; }
-      });
-      if (changed) {
-        saveData(data);
-        // 관리자 탭이 열려있으면 현황 갱신
-        if (adminLoggedIn) loadTodayAdmin();
-      }
-    }, 5000);
   }
 })();
 </script>
