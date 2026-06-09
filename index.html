@@ -3810,59 +3810,59 @@ function adminLogout() {
   document.getElementById('adminPw').value = '';
 }
 function switchAdminTab(btn, tab) {
-  document.querySelectorAll('.admin-tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.add('hide'));
-  document.getElementById('admin'+tab).classList.remove('hide');
-  if (tab==='Today') loadTodayAdmin();
-  if (tab==='Employees') renderEmployees();
-  if (tab==='Stats') initStatDates();
+  // tab은 소문자(today/employees/stats), ID는 대문자(adminToday/adminEmployees/adminStats)
+  const idMap = { today:'adminToday', employees:'adminEmployees', stats:'adminStats' };
+  const panelId = idMap[tab] || ('admin' + tab.charAt(0).toUpperCase() + tab.slice(1));
+  const panel = document.getElementById(panelId);
+  if (panel) panel.classList.remove('hide');
+  if (tab==='today') loadTodayAdmin();
+  if (tab==='employees') renderEmployees();
+  if (tab==='stats') initStatDates();
 }
 
 function loadTodayAdmin() {
   const data = getData(), today = getToday();
   const todayRecords = {};
   data.records.filter(r=>r.date===today).forEach(r=>{ todayRecords[r.empId]=r; });
-  let attend=0,late=0,absent=0,rows=[];
+  let attend=0, late=0, absent=0, rows=[];
   const teamStats={};
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
     if(!teamStats[emp.team]) teamStats[emp.team]={attend:0,late:0,absent:0,total:0};
     teamStats[emp.team].total++;
     const r = todayRecords[emp.id];
-    if (r) {
+    if(r){
       rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
       const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent';
-      teamStats[emp.team][k]++; if(r.status==='출석')attend++;else if(r.status==='지각')late++;else absent++;
+      teamStats[emp.team][k]++;
+      if(r.status==='출석')attend++; else if(r.status==='지각')late++; else absent++;
     } else {
       rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:'-',status:'미체크',reason:''});
     }
   });
   const total = data.employees.filter(e=>e.active!==false).length;
-  document.getElementById('totalEmp').textContent   = total;
-  document.getElementById('attendCount').textContent = attend;
-  document.getElementById('lateCount').textContent   = late;
-  document.getElementById('absentCount').textContent = absent;
-  document.getElementById('todayDate').textContent   = today + ' ' + getDayName(today);
 
+  // 요약 카드 (todaySummary)
+  const sumDiv = document.getElementById('todaySummary');
+  if(sumDiv) sumDiv.innerHTML = `
+    <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">전체</div></div>
+    <div class="stat-card attend"><div class="stat-num">${attend}</div><div class="stat-label">출석</div></div>
+    <div class="stat-card late"><div class="stat-num">${late}</div><div class="stat-label">지각</div></div>
+    <div class="stat-card absent"><div class="stat-num">${absent}</div><div class="stat-label">결석</div></div>
+    <div class="stat-card"><div class="stat-num">${total-attend-late-absent}</div><div class="stat-label">미체크</div></div>`;
+
+  // 개인별 현황 테이블
   const tbody = document.getElementById('todayTable');
-  tbody.innerHTML = '';
+  if(!tbody) return;
+  tbody.innerHTML='';
   rows.forEach(r=>{
     const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
     const carCell=r.car?`<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:1px 7px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     tbody.innerHTML+=`<tr><td>${r.id}</td><td><strong>${r.name}</strong></td><td>${r.team}</td><td>${carCell}</td><td>${r.time}</td><td><span class="badge ${cls}">${r.status}</span></td><td>${r.reason||'-'}</td></tr>`;
   });
-  if (!rows.length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
-
-  // 팀별 요약
-  const teamDiv = document.getElementById('teamSummary');
-  if (teamDiv) {
-    teamDiv.innerHTML = '';
-    Object.entries(teamStats).forEach(([team,s])=>{
-      teamDiv.innerHTML+=`<div class="stat-card"><div class="stat-title">${team}</div><div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin-top:6px">
-        <span class="badge attend">출석 ${s.attend}</span><span class="badge late">지각 ${s.late}</span><span class="badge absent">결석 ${s.absent}</span>
-        <span class="badge" style="background:var(--border-light);color:var(--text2)">미체크 ${s.total-s.attend-s.late-s.absent}</span></div></div>`;
-    });
-  }
+  if(!rows.length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
 }
 
 function renderEmployees() {
@@ -3946,16 +3946,33 @@ function loadStats() {
   const data=getData();
   const records=data.records.filter(r=>r.date>=start&&r.date<=end);
   const byEmp={};
-  data.employees.filter(e=>e.active!==false).forEach(e=>{byEmp[e.id]={name:e.name,team:e.team,attend:0,late:0,absent:0,total:0};});
-  records.forEach(r=>{if(byEmp[r.empId]){byEmp[r.empId].total++;const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent';byEmp[r.empId][k]++;}});
-  const tbody=document.getElementById('statsTable');
-  if(!tbody)return;
-  tbody.innerHTML='';
+  data.employees.filter(e=>e.active!==false).forEach(e=>{
+    byEmp[e.id]={name:e.name,team:e.team,attend:0,late:0,absent:0,total:0};
+  });
+  records.forEach(r=>{ if(byEmp[r.empId]){ byEmp[r.empId].total++; const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent'; byEmp[r.empId][k]++; } });
+
+  const sumDiv=document.getElementById('statsSummary');
+  if(!sumDiv) return;
+  let html=`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px">
+    <thead><tr style="background:var(--border-light)">
+      <th style="padding:8px;text-align:left">이름</th><th style="padding:8px">팀명</th>
+      <th style="padding:8px;color:var(--success)">출석</th><th style="padding:8px;color:var(--warning)">지각</th>
+      <th style="padding:8px;color:var(--danger)">결석</th><th style="padding:8px">합계</th><th style="padding:8px">출석률</th>
+    </tr></thead><tbody>`;
   Object.values(byEmp).forEach(s=>{
     const rate=s.total?Math.round((s.attend/s.total)*100):0;
-    tbody.innerHTML+=`<tr><td><strong>${s.name}</strong></td><td>${s.team}</td><td>${s.attend}</td><td>${s.late}</td><td>${s.absent}</td><td>${s.total}</td><td>${rate}%</td></tr>`;
+    html+=`<tr style="border-bottom:1px solid var(--border)">
+      <td style="padding:8px;font-weight:700">${s.name}</td><td style="padding:8px;text-align:center">${s.team}</td>
+      <td style="padding:8px;text-align:center;color:var(--success)">${s.attend}</td>
+      <td style="padding:8px;text-align:center;color:var(--warning)">${s.late}</td>
+      <td style="padding:8px;text-align:center;color:var(--danger)">${s.absent}</td>
+      <td style="padding:8px;text-align:center">${s.total}</td>
+      <td style="padding:8px;text-align:center;font-weight:700">${rate}%</td>
+    </tr>`;
   });
-  if(!Object.keys(byEmp).length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-chart-bar"></i><p>데이터가 없습니다</p></td></tr>';
+  html+='</tbody></table></div>';
+  if(!Object.keys(byEmp).length) html='<div class="empty-state"><i class="fas fa-chart-bar"></i><p>데이터가 없습니다</p></div>';
+  sumDiv.innerHTML=html;
 }
 
 // ============================================================
@@ -3969,13 +3986,13 @@ function renderReport() {
   const rows=[]; let attend=0,late=0,absent=0;
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
     const r=recs[emp.id];
-    if(r){rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
-      if(r.status==='출석')attend++;else if(r.status==='지각')late++;else absent++;}
+    if(r){ rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
+      if(r.status==='출석')attend++; else if(r.status==='지각')late++; else absent++; }
     else rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:'-',status:'미체크',reason:''});
   });
   const total=data.employees.filter(e=>e.active!==false).length;
-  const area=document.getElementById('reportArea'); if(!area)return;
-  let html=`<div class="report-header"><h1>${data.settings.company||'이천물류'} 출석 현황</h1><p>${date} (${getDayName(date)})</p></div>
+  const area=document.getElementById('reportContent'); if(!area)return;
+  let html=`<div class="report-header"><h1>${data.settings?.company||'이천물류'} 출석 현황</h1><p>${date} (${getDayName(date)})</p></div>
     <div class="report-summary">
       <div class="report-stat"><div class="n">${total}</div><div class="l">전체</div></div>
       <div class="report-stat attend"><div class="n">${attend}</div><div class="l">출석</div></div>
@@ -3986,7 +4003,10 @@ function renderReport() {
     <table class="report-table"><thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody>`;
   rows.forEach((r,i)=>{
     const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
-    html+=`<tr><td>${i+1}</td><td>${r.id}</td><td style="text-align:left;padding-left:6px"><strong>${r.name}</strong></td><td>${r.team}</td><td style="font-weight:600;color:#1a73e8">${r.car||'-'}</td><td>${r.time}</td><td><span class="report-status ${cls}">${r.status}</span></td><td style="font-size:8.5px;color:var(--text2)">${r.reason||'-'}</td></tr>`;
+    html+=`<tr><td>${i+1}</td><td>${r.id}</td><td style="text-align:left;padding-left:6px"><strong>${r.name}</strong></td><td>${r.team}</td>
+      <td style="font-weight:600;color:#1a73e8">${r.car||'-'}</td><td>${r.time}</td>
+      <td><span class="report-status ${cls}">${r.status}</span></td>
+      <td style="font-size:8.5px;color:var(--text2)">${r.reason||'-'}</td></tr>`;
   });
   html+='</tbody></table>';
   area.innerHTML=html;
