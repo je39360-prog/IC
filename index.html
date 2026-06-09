@@ -214,11 +214,49 @@ tr:nth-child(even){background:#fafbfc}
 .btn-checkin{padding:14px 18px;font-size:16px}
 }
 @media print{
-body{background:#fff}
-.nav,.filter-bar,.btn-checkin,.scanner-wrap,.hide-print{display:none!important}
-.page{display:block!important;padding:0;max-width:100%}
-.card{box-shadow:none;padding:0;border:none}
-.report-header h1{font-size:18px}
+  @page { size:A4; margin:10mm 12mm; }
+
+  /* 보고서 탭 외 모든 요소 숨김 */
+  body > *:not(#tab-report) { display:none !important; }
+  #tab-report { display:block !important; padding:0 !important; margin:0 !important; }
+
+  /* 불필요한 UI 제거 */
+  .nav, .filter-bar, .btn-checkin, .scanner-wrap,
+  .hide-print, .card:not(#reportContent) { display:none !important; }
+
+  /* 보고서 영역 초기화 */
+  #reportContent {
+    display:block !important;
+    position:absolute !important;
+    top:0 !important; left:0 !important;
+    margin:0 !important; padding:0 !important;
+    box-shadow:none !important;
+    border-radius:0 !important;
+    border:none !important;
+    width:100% !important;
+    background:#fff !important;
+  }
+
+  /* 보고서 헤더 */
+  .report-header { margin-bottom:10px !important; padding-bottom:8px !important; }
+  .report-header h1 { font-size:16px !important; }
+  .report-header p { font-size:11px !important; }
+
+  /* 요약 통계 */
+  .report-summary { margin-bottom:10px !important; }
+  .report-stat .n { font-size:18px !important; }
+  .report-stat .l { font-size:10px !important; }
+
+  /* 테이블 */
+  .report-table { width:100% !important; font-size:9px !important; border-collapse:collapse !important; }
+  .report-table th, .report-table td { padding:4px 5px !important; border:1px solid #ddd !important; }
+  .report-table thead { background:#f5f5f5 !important; -webkit-print-color-adjust:exact !important; print-color-adjust:exact !important; }
+  .report-status { font-size:8px !important; padding:1px 5px !important; border-radius:6px !important; }
+
+  /* 페이지 넘김 방지 */
+  tr { page-break-inside:avoid !important; }
+  -webkit-print-color-adjust:exact;
+  print-color-adjust:exact;
 }
 </style>
 </head>
@@ -336,11 +374,11 @@ body{background:#fff}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
           <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">출석 현황</div>
-            <canvas id="todayChart" height="160"></canvas>
+            <div style="position:relative;height:160px"><canvas id="todayChart"></canvas></div>
           </div>
           <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">팀별 출석률</div>
-            <canvas id="teamChart" height="160"></canvas>
+            <div style="position:relative;height:160px"><canvas id="teamChart"></canvas></div>
           </div>
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
@@ -385,11 +423,11 @@ body{background:#fff}
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">일별 현황</div>
-            <canvas id="dailyChart" height="160"></canvas>
+            <div style="position:relative;height:160px"><canvas id="dailyChart"></canvas></div>
           </div>
           <div style="background:var(--border-light);border-radius:var(--radius);padding:12px">
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">전체 통계</div>
-            <canvas id="pieChart" height="160"></canvas>
+            <div style="position:relative;height:160px"><canvas id="pieChart"></canvas></div>
           </div>
         </div>
       </div>
@@ -3843,15 +3881,51 @@ function loadTodayAdmin() {
     }
   });
   const total = data.employees.filter(e=>e.active!==false).length;
+  const nocheck = total - attend - late - absent;
 
-  // 요약 카드 (todaySummary)
+  // 요약 카드
   const sumDiv = document.getElementById('todaySummary');
   if(sumDiv) sumDiv.innerHTML = `
     <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">전체</div></div>
     <div class="stat-card attend"><div class="stat-num">${attend}</div><div class="stat-label">출석</div></div>
     <div class="stat-card late"><div class="stat-num">${late}</div><div class="stat-label">지각</div></div>
     <div class="stat-card absent"><div class="stat-num">${absent}</div><div class="stat-label">결석</div></div>
-    <div class="stat-card"><div class="stat-num">${total-attend-late-absent}</div><div class="stat-label">미체크</div></div>`;
+    <div class="stat-card"><div class="stat-num">${nocheck}</div><div class="stat-label">미체크</div></div>`;
+
+  // 출석 현황 도넛 차트
+  const ctx1 = document.getElementById('todayChart');
+  if(ctx1 && typeof Chart !== 'undefined') {
+    if(ctx1._chart) ctx1._chart.destroy();
+    ctx1._chart = new Chart(ctx1, {
+      type: 'doughnut',
+      data: {
+        labels: ['출석','지각','결석','미체크'],
+        datasets:[{ data:[attend,late,absent,nocheck], backgroundColor:['#34a853','#fbbc04','#ea4335','#dadce0'], borderWidth:0 }]
+      },
+      options:{ responsive:true, plugins:{ legend:{ position:'bottom', labels:{ font:{size:11}, padding:8 } } }, cutout:'65%', maintainAspectRatio:false }
+    });
+  }
+
+  // 팀별 출석률 바 차트
+  const ctx2 = document.getElementById('teamChart');
+  if(ctx2 && typeof Chart !== 'undefined' && Object.keys(teamStats).length) {
+    if(ctx2._chart) ctx2._chart.destroy();
+    const teams = Object.keys(teamStats);
+    const rates = teams.map(t=>teamStats[t].total ? Math.round((teamStats[t].attend/teamStats[t].total)*100) : 0);
+    ctx2._chart = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: teams,
+        datasets:[{ label:'출석률(%)', data:rates, backgroundColor:'#1a73e8', borderRadius:6 }]
+      },
+      options:{
+        responsive:true,
+        plugins:{ legend:{display:false} },
+        scales:{ y:{ min:0, max:100, ticks:{callback:v=>v+'%', font:{size:10}} }, x:{ ticks:{font:{size:10}} } },
+        maintainAspectRatio:false
+      }
+    });
+  }
 
   // 개인별 현황 테이블
   const tbody = document.getElementById('todayTable');
@@ -3949,25 +4023,84 @@ function loadStats() {
   data.employees.filter(e=>e.active!==false).forEach(e=>{
     byEmp[e.id]={name:e.name,team:e.team,attend:0,late:0,absent:0,total:0};
   });
-  records.forEach(r=>{ if(byEmp[r.empId]){ byEmp[r.empId].total++; const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent'; byEmp[r.empId][k]++; } });
+  let totalAttend=0, totalLate=0, totalAbsent=0;
+  const byDate={};
+  records.forEach(r=>{
+    if(byEmp[r.empId]){
+      byEmp[r.empId].total++;
+      const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent';
+      byEmp[r.empId][k]++;
+      if(!byDate[r.date]) byDate[r.date]={attend:0,late:0,absent:0};
+      byDate[r.date][k]++;
+      if(r.status==='출석')totalAttend++; else if(r.status==='지각')totalLate++; else totalAbsent++;
+    }
+  });
 
+  // 일별 차트
+  const ctx3=document.getElementById('dailyChart');
+  if(ctx3 && typeof Chart !== 'undefined'){
+    if(ctx3._chart) ctx3._chart.destroy();
+    const dates=Object.keys(byDate).sort();
+    ctx3._chart=new Chart(ctx3,{
+      type:'bar',
+      data:{
+        labels:dates.map(d=>d.slice(5)),
+        datasets:[
+          {label:'출석',data:dates.map(d=>byDate[d].attend),backgroundColor:'#34a853',borderRadius:3},
+          {label:'지각',data:dates.map(d=>byDate[d].late),backgroundColor:'#fbbc04',borderRadius:3},
+          {label:'결석',data:dates.map(d=>byDate[d].absent),backgroundColor:'#ea4335',borderRadius:3}
+        ]
+      },
+      options:{
+        responsive:true,
+        plugins:{legend:{position:'bottom',labels:{font:{size:10},padding:6}}},
+        scales:{x:{stacked:true,ticks:{font:{size:9}}},y:{stacked:true,ticks:{font:{size:10}}}},
+        maintainAspectRatio:false
+      }
+    });
+  }
+
+  // 전체 통계 파이 차트
+  const ctx4=document.getElementById('pieChart');
+  if(ctx4 && typeof Chart !== 'undefined'){
+    if(ctx4._chart) ctx4._chart.destroy();
+    ctx4._chart=new Chart(ctx4,{
+      type:'doughnut',
+      data:{
+        labels:['출석','지각','결석'],
+        datasets:[{data:[totalAttend,totalLate,totalAbsent],backgroundColor:['#34a853','#fbbc04','#ea4335'],borderWidth:0}]
+      },
+      options:{responsive:true, plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8}}},cutout:'60%',maintainAspectRatio:false}
+    });
+  }
+
+  // 직원별 통계 테이블
   const sumDiv=document.getElementById('statsSummary');
   if(!sumDiv) return;
-  let html=`<div style="overflow-x:auto;margin-top:8px"><table style="width:100%;border-collapse:collapse;font-size:13px">
+  let html=`<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
     <thead><tr style="background:var(--border-light)">
       <th style="padding:8px;text-align:left">이름</th><th style="padding:8px">팀명</th>
-      <th style="padding:8px;color:var(--success)">출석</th><th style="padding:8px;color:var(--warning)">지각</th>
-      <th style="padding:8px;color:var(--danger)">결석</th><th style="padding:8px">합계</th><th style="padding:8px">출석률</th>
+      <th style="padding:8px;color:#34a853">출석</th><th style="padding:8px;color:#fbbc04">지각</th>
+      <th style="padding:8px;color:#ea4335">결석</th><th style="padding:8px">합계</th><th style="padding:8px">출석률</th>
     </tr></thead><tbody>`;
   Object.values(byEmp).forEach(s=>{
     const rate=s.total?Math.round((s.attend/s.total)*100):0;
+    const barW=rate, barC=rate>=80?'#34a853':rate>=60?'#fbbc04':'#ea4335';
     html+=`<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:8px;font-weight:700">${s.name}</td><td style="padding:8px;text-align:center">${s.team}</td>
-      <td style="padding:8px;text-align:center;color:var(--success)">${s.attend}</td>
-      <td style="padding:8px;text-align:center;color:var(--warning)">${s.late}</td>
-      <td style="padding:8px;text-align:center;color:var(--danger)">${s.absent}</td>
+      <td style="padding:8px;font-weight:700">${s.name}</td>
+      <td style="padding:8px;text-align:center">${s.team}</td>
+      <td style="padding:8px;text-align:center;color:#34a853;font-weight:600">${s.attend}</td>
+      <td style="padding:8px;text-align:center;color:#fbbc04;font-weight:600">${s.late}</td>
+      <td style="padding:8px;text-align:center;color:#ea4335;font-weight:600">${s.absent}</td>
       <td style="padding:8px;text-align:center">${s.total}</td>
-      <td style="padding:8px;text-align:center;font-weight:700">${rate}%</td>
+      <td style="padding:8px;min-width:80px">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div style="flex:1;height:6px;background:var(--border);border-radius:3px">
+            <div style="width:${barW}%;height:100%;background:${barC};border-radius:3px"></div>
+          </div>
+          <span style="font-size:11px;font-weight:700;color:${barC}">${rate}%</span>
+        </div>
+      </td>
     </tr>`;
   });
   html+='</tbody></table></div>';
