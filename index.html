@@ -213,6 +213,28 @@ tr:nth-child(even){background:#fafbfc}
 .clock-display .time{font-size:28px}
 .btn-checkin{padding:14px 18px;font-size:16px}
 }
+
+/* 의석 뷰 */
+.seat-team-block{margin-bottom:16px}
+.seat-team-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.seat-team-title .seat-team-badges{display:flex;gap:4px;font-weight:400}
+.seat-grid{display:flex;flex-wrap:wrap;gap:6px}
+.seat{
+  width:44px;height:52px;border-radius:8px 8px 4px 4px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  font-size:10px;font-weight:600;cursor:default;position:relative;
+  transition:transform .15s;border:2px solid transparent;gap:2px;
+}
+.seat:hover{transform:scale(1.12);z-index:2}
+.seat.attend {background:#e6f4ea;border-color:#34a853;color:#1e7e34}
+.seat.late   {background:#fff8e1;border-color:#fbbc04;color:#b06000}
+.seat.absent {background:#fce8e6;border-color:#ea4335;color:#c5221f}
+.seat.nocheck{background:#f1f3f4;border-color:#dadce0;color:#9aa0a6}
+.seat .seat-icon{font-size:18px;line-height:1}
+.seat .seat-name{font-size:9px;text-align:center;line-height:1.2;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.seat-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;align-items:center}
+.seat-legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:3px}
+
 @media print{
   @page { size:A4; margin:10mm 12mm; }
 
@@ -381,8 +403,32 @@ tr:nth-child(even){background:#fafbfc}
             <div style="position:relative;height:160px"><canvas id="teamChart"></canvas></div>
           </div>
         </div>
+        <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-th"></i> 팀별 실시간 출석 현황</div>
+        <div id="seatView" style="margin-bottom:16px"></div>
+
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
-        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody id="todayTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th><th>수정</th></tr></thead><tbody id="todayTable"></tbody></table></div>
+
+        <!-- 사유 수정 모달 -->
+        <div id="reasonModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
+          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg)">
+            <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-edit" style="color:var(--primary)"></i> 출석 정보 수정</h3>
+            <p id="reasonModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">상태</label>
+            <select id="reasonModalStatus" style="margin-bottom:12px">
+              <option value="출석">출석</option>
+              <option value="지각">지각</option>
+              <option value="결석">결석</option>
+              <option value="미체크">미체크</option>
+            </select>
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">사유</label>
+            <textarea id="reasonModalInput" placeholder="사유 입력 (선택)" style="margin-bottom:14px;height:72px"></textarea>
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-p" style="flex:1" onclick="saveReasonModal()"><i class="fas fa-save"></i> 저장</button>
+              <button class="btn btn-s" style="flex:1" onclick="closeReasonModal()"><i class="fas fa-times"></i> 취소</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div id="adminEmployees" class="admin-panel hide">
@@ -3487,6 +3533,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   document.getElementById('manualToken').addEventListener('keypress', e => { if(e.key==='Enter') manualCheckin(); });
   document.getElementById('carModal').addEventListener('click', function(e) { if(e.target===this) closeCarModal(); });
+  document.getElementById('reasonModal').addEventListener('click', function(e) { if(e.target===this) closeReasonModal(); });
   setInterval(updateClock, 1000); updateClock();
   document.getElementById('reportDate').value = getToday();
 
@@ -3927,6 +3974,50 @@ function loadTodayAdmin() {
     });
   }
 
+  // 팀별 의석 뷰
+  const seatView = document.getElementById('seatView');
+  if (seatView) {
+    const ICONS = { '출석':'🟢', '지각':'🟡', '결석':'🔴', '미체크':'⬜' };
+    const STATUS_CLS = { '출석':'attend', '지각':'late', '결석':'absent', '미체크':'nocheck' };
+    let html = `<div class="seat-legend">
+      <span><span class="seat-legend-dot" style="background:#34a853"></span>출석</span>
+      <span><span class="seat-legend-dot" style="background:#fbbc04"></span>지각</span>
+      <span><span class="seat-legend-dot" style="background:#ea4335"></span>결석</span>
+      <span><span class="seat-legend-dot" style="background:#dadce0"></span>미체크</span>
+    </div>`;
+    Object.keys(teamStats).forEach(team => {
+      const s = teamStats[team];
+      const checked = s.attend + s.late + s.absent;
+      const emps = data.employees.filter(e => e.active !== false && e.team === team);
+      html += `<div class="seat-team-block">
+        <div class="seat-team-title">
+          <span><i class="fas fa-users" style="color:var(--primary);margin-right:4px"></i>${team}</span>
+          <div class="seat-team-badges">
+            <span class="badge attend" style="font-size:10px">출석 ${s.attend}</span>
+            <span class="badge late"   style="font-size:10px">지각 ${s.late}</span>
+            <span class="badge absent" style="font-size:10px">결석 ${s.absent}</span>
+            <span class="badge nocheck" style="font-size:10px;background:var(--border-light);color:var(--text2)">미체크 ${s.total-checked}</span>
+          </div>
+        </div>
+        <div class="seat-grid">`;
+      emps.forEach(emp => {
+        const rec = todayRecords[emp.id];
+        const status = rec ? rec.status : '미체크';
+        const cls = STATUS_CLS[status] || 'nocheck';
+        const icon = ICONS[status] || '⬜';
+        html += `<div class="seat ${cls}" title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''}">
+          <span class="seat-icon">${icon}</span>
+          <span class="seat-name">${emp.name}</span>
+        </div>`;
+      });
+      html += `</div></div>`;
+    });
+    if (!Object.keys(teamStats).length) {
+      html += `<div class="empty-state" style="padding:24px"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></div>`;
+    }
+    seatView.innerHTML = html;
+  }
+
   // 개인별 현황 테이블
   const tbody = document.getElementById('todayTable');
   if(!tbody) return;
@@ -3934,9 +4025,18 @@ function loadTodayAdmin() {
   rows.forEach(r=>{
     const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
     const carCell=r.car?`<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:1px 7px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
-    tbody.innerHTML+=`<tr><td>${r.id}</td><td><strong>${r.name}</strong></td><td>${r.team}</td><td>${carCell}</td><td>${r.time}</td><td><span class="badge ${cls}">${r.status}</span></td><td>${r.reason||'-'}</td></tr>`;
+    tbody.innerHTML+=`<tr>
+      <td>${r.id}</td>
+      <td><strong>${r.name}</strong></td>
+      <td>${r.team}</td>
+      <td>${carCell}</td>
+      <td>${r.time}</td>
+      <td><span class="badge ${cls}">${r.status}</span></td>
+      <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason||''}">${r.reason||'-'}</td>
+      <td><button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8;white-space:nowrap" onclick="openReasonModal('${r.id}','${today}')"><i class="fas fa-edit"></i></button></td>
+    </tr>`;
   });
-  if(!rows.length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
+  if(!rows.length) tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
 }
 
 function renderEmployees() {
@@ -3997,6 +4097,60 @@ function openCarModal(id) {
   setTimeout(()=>document.getElementById('carModalInput').focus(),100);
 }
 function closeCarModal() { document.getElementById('carModal').style.display='none'; carTargetId=null; }
+
+// ============================================================
+// 사유/상태 수정 모달
+// ============================================================
+let reasonTargetEmpId = null, reasonTargetDate = null;
+
+function openReasonModal(empId, date) {
+  const data = getData();
+  const emp = data.employees.find(e => e.id === empId);
+  const rec = data.records.find(r => r.empId === empId && r.date === date);
+  if (!emp) return;
+  reasonTargetEmpId = empId;
+  reasonTargetDate  = date;
+  document.getElementById('reasonModalName').textContent = `${emp.name} (${emp.team}) · ${date}`;
+  document.getElementById('reasonModalStatus').value  = rec ? rec.status  : '미체크';
+  document.getElementById('reasonModalInput').value   = rec ? (rec.reason || '') : '';
+  const modal = document.getElementById('reasonModal');
+  modal.style.display = 'flex';
+  setTimeout(() => document.getElementById('reasonModalInput').focus(), 100);
+}
+
+function closeReasonModal() {
+  document.getElementById('reasonModal').style.display = 'none';
+  reasonTargetEmpId = null; reasonTargetDate = null;
+}
+
+async function saveReasonModal() {
+  if (!reasonTargetEmpId || !reasonTargetDate) return;
+  const status = document.getElementById('reasonModalStatus').value;
+  const reason = document.getElementById('reasonModalInput').value.trim();
+  const data   = getData();
+  const emp    = data.employees.find(e => e.id === reasonTargetEmpId);
+  if (!emp) return;
+
+  const idx = data.records.findIndex(r => r.empId === reasonTargetEmpId && r.date === reasonTargetDate);
+  if (status === '미체크') {
+    // 미체크로 변경 시 레코드 삭제
+    if (idx !== -1) data.records.splice(idx, 1);
+  } else if (idx !== -1) {
+    // 기존 레코드 수정
+    data.records[idx].status = status;
+    data.records[idx].reason = reason;
+  } else {
+    // 레코드 없으면 새로 생성
+    data.records.push({
+      date: reasonTargetDate, empId: emp.id, name: emp.name, team: emp.team,
+      time: getTimeStr(), status, reason, method: '관리자수정'
+    });
+  }
+  await saveData(data);
+  closeReasonModal();
+  loadTodayAdmin();
+  toast(`${emp.name}님 출석 정보가 수정되었습니다.`);
+}
 async function saveCarNumber() {
   if(!carTargetId)return;
   const car=document.getElementById('carModalInput').value.trim(), data=getData(); let empName='';
@@ -4236,6 +4390,7 @@ Object.assign(window,{
   addEmployee,adminLogin,adminLogout,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
   deleteEmp,exportCSV,loadStats,manualCheckin,openCarModal,
+  openReasonModal,closeReasonModal,saveReasonModal,
   printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
