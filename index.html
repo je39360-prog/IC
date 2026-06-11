@@ -351,15 +351,7 @@ tr:nth-child(even){background:#fafbfc}
     <!-- 공용 QR 스캔 후 직원 선택 UI -->
     <div id="empSelectArea" class="hide" style="text-align:left;margin-top:12px">
       <hr style="border:none;border-top:1px solid var(--border);margin:0 0 14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-        <div style="font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px"><i class="fas fa-users" style="color:var(--primary)"></i> 본인 이름을 선택하세요</div>
-        <button class="btn btn-sm btn-s" onclick="closeEmpSelect()"><i class="fas fa-times"></i></button>
-      </div>
-      <div style="position:relative;margin-bottom:10px">
-        <i class="fas fa-search" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px"></i>
-        <input type="text" id="empSelectSearch" placeholder="이름 검색" style="padding-left:32px" oninput="renderEmpSelect()">
-      </div>
-      <div id="empSelectGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px;max-height:320px;overflow-y:auto"></div>
+      <div id="empSelectGrid" style="max-height:400px;overflow-y:auto"></div>
     </div>
   </div>
 
@@ -3778,6 +3770,8 @@ function showEmpSelect() {
   document.getElementById('employeeInfo').classList.add('hide');
   document.getElementById('resultArea').classList.add('hide');
   document.getElementById('checkinGuide').classList.add('hide');
+  document.getElementById('empSelectArea').classList.remove('hide');
+
   const saved = getSavedEmp();
   if (saved) {
     const src = mobileEmpList?.length ? mobileEmpList : getData().employees;
@@ -3785,9 +3779,8 @@ function showEmpSelect() {
     if (found) { showSavedEmpConfirm(found); return; }
     clearMyEmp();
   }
-  document.getElementById('empSelectArea').classList.remove('hide');
-  document.getElementById('empSelectSearch').value = '';
-  renderEmpSelect();
+  // 저장된 정보 없으면 → 이름 직접 입력으로 본인 확인
+  showFirstTimeInput();
 }
 
 function renderEmpSelectIfNeeded() {
@@ -3841,20 +3834,94 @@ function showSavedEmpConfirm(emp) {
   const area = document.getElementById('empSelectArea');
   area.classList.remove('hide');
   const grid = document.getElementById('empSelectGrid');
-  grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:16px 8px">
-    <div style="font-size:13px;color:var(--text2);margin-bottom:14px"><i class="fas fa-user-check" style="color:var(--primary)"></i> 저장된 정보로 출석하시겠습니까?</div>
-    <div style="background:var(--border-light);border-radius:var(--radius-lg);padding:16px;margin-bottom:14px">
-      <div style="font-size:22px;font-weight:700;margin-bottom:4px">${emp.name}</div>
+  grid.innerHTML = `<div style="text-align:center;padding:16px 8px">
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">
+      <i class="fas fa-user-check" style="color:var(--primary);font-size:24px;display:block;margin-bottom:8px"></i>
+      저장된 정보로 출석하시겠습니까?
+    </div>
+    <div style="background:var(--border-light);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px">
+      <div style="font-size:24px;font-weight:700;margin-bottom:4px">${emp.name}</div>
       <div style="font-size:13px;color:var(--text2)">${emp.team}</div>
     </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-p" style="flex:2" onclick="confirmSavedEmp()"><i class="fas fa-check"></i> 네, 맞습니다</button>
-      <button class="btn btn-s" style="flex:1" onclick="changeSavedEmp()"><i class="fas fa-exchange-alt"></i> 변경</button>
-    </div></div>`;
+    <button class="btn btn-p btn-block" onclick="confirmSavedEmp()">
+      <i class="fas fa-check-circle"></i> 네, 맞습니다 — 출석하기
+    </button>
+  </div>`;
   window._savedEmp = emp;
 }
 function confirmSavedEmp() { if(window._savedEmp){selectEmpForCheckin(window._savedEmp);window._savedEmp=null;} }
-function changeSavedEmp()  { clearMyEmp();window._savedEmp=null;document.getElementById('empSelectSearch').value='';renderEmpSelect(); }
+function changeSavedEmp()  { clearMyEmp();window._savedEmp=null;showFirstTimeInput(); }
+
+// 최초 등록: 이름 입력으로 본인 찾기
+function showFirstTimeInput() {
+  const grid = document.getElementById('empSelectGrid');
+  if (!grid) return;
+  grid.innerHTML = `
+    <div style="text-align:center;padding:8px 0 14px">
+      <i class="fas fa-user-plus" style="color:var(--primary);font-size:28px;display:block;margin-bottom:10px"></i>
+      <div style="font-size:15px;font-weight:700;margin-bottom:4px">처음 사용하시는군요!</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">본인 이름을 입력해 주세요</div>
+      <div style="position:relative;margin-bottom:12px">
+        <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px"></i>
+        <input type="text" id="firstTimeNameInput" placeholder="이름 입력 (예: 홍길동)"
+          style="padding-left:38px;font-size:15px;text-align:left"
+          oninput="renderFirstTimeResults()" autocomplete="off">
+      </div>
+      <div id="firstTimeResults"></div>
+    </div>`;
+  setTimeout(() => document.getElementById('firstTimeNameInput')?.focus(), 100);
+}
+
+function renderFirstTimeResults() {
+  const search = (document.getElementById('firstTimeNameInput')?.value || '').trim();
+  const resultDiv = document.getElementById('firstTimeResults');
+  if (!resultDiv) return;
+  if (!search) { resultDiv.innerHTML = ''; return; }
+
+  const data = getData();
+  const today = getToday();
+  const checked = {};
+  data.records.filter(r => r.date === today).forEach(r => { checked[r.empId] = r.status; });
+
+  const matched = data.employees.filter(e =>
+    e.active !== false && e.name.includes(search)
+  );
+
+  if (!matched.length) {
+    resultDiv.innerHTML = `<div style="padding:16px;color:var(--text3);font-size:13px;text-align:center">
+      <i class="fas fa-exclamation-circle"></i> 일치하는 직원이 없습니다</div>`;
+    return;
+  }
+
+  resultDiv.innerHTML = matched.map(emp => {
+    const status = checked[emp.id];
+    const done = !!status;
+    const cls = done ? (status==='출석'?'#34a853':status==='지각'?'#fbbc04':'#ea4335') : 'var(--primary)';
+    return `<div onclick="${done ? '' : `selectAndSaveEmp('${emp.id}')`}"
+      style="display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius);
+      background:var(--bg);border:2px solid ${done?'var(--border)':cls};
+      margin-bottom:8px;cursor:${done?'default':'pointer'};transition:all .15s"
+      ${done?'':'onmouseover="this.style.background=\'var(--border-light)\'" onmouseout="this.style.background=\'var(--bg)\'"'}>
+      <div style="width:40px;height:40px;border-radius:50%;background:${done?'var(--border)':cls};color:#fff;
+        display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700;flex-shrink:0">
+        ${emp.name.charAt(0)}
+      </div>
+      <div style="flex:1;text-align:left">
+        <div style="font-weight:700;font-size:16px">${emp.name}</div>
+        <div style="font-size:12px;color:var(--text2)">${emp.team}</div>
+      </div>
+      ${done
+        ? `<span class="badge ${status==='출석'?'attend':status==='지각'?'late':'absent'}" style="font-size:11px">${status} ✓</span>`
+        : `<i class="fas fa-chevron-right" style="color:${cls}"></i>`
+      }
+    </div>`;
+  }).join('');
+}
+
+function selectAndSaveEmp(empId) {
+  const emp = getData().employees.find(e => e.id === empId);
+  if (emp) selectEmpForCheckin(emp);
+}
 
 function selectEmpForCheckin(emp) {
   saveMyEmp(emp);
@@ -4392,6 +4459,7 @@ Object.assign(window,{
   deleteEmp,exportCSV,loadStats,manualCheckin,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,
   printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,
+  renderFirstTimeResults,selectAndSaveEmp,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
 </script>
