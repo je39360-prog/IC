@@ -3975,6 +3975,40 @@ function switchAdminTab(btn, tab) {
   if (tab==='stats') initStatDates();
 }
 
+function highlightTodayRow(empId) {
+  // 개인별 현황 테이블에서 해당 직원 행 찾기
+  const tbody = document.getElementById('todayTable');
+  if (!tbody) return;
+
+  // 기존 하이라이트 제거
+  tbody.querySelectorAll('tr.row-highlight').forEach(r => {
+    r.classList.remove('row-highlight');
+    r.style.background = '';
+  });
+
+  // 해당 직원 행 찾아서 하이라이트
+  const rows = tbody.querySelectorAll('tr');
+  let targetRow = null;
+  rows.forEach(row => {
+    if (row.cells[0]?.textContent === empId) targetRow = row;
+  });
+
+  if (targetRow) {
+    targetRow.classList.add('row-highlight');
+    targetRow.style.background = '#e8f0fe';
+    targetRow.style.transition = 'background .3s';
+
+    // 테이블로 부드럽게 스크롤
+    targetRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 2.5초 후 하이라이트 해제
+    setTimeout(() => {
+      targetRow.style.background = '';
+      targetRow.classList.remove('row-highlight');
+    }, 2500);
+  }
+}
+
 function loadTodayAdmin() {
   const data = getData(), today = getToday();
   const todayRecords = {};
@@ -4072,7 +4106,9 @@ function loadTodayAdmin() {
         const status = rec ? rec.status : '미체크';
         const cls = STATUS_CLS[status] || 'nocheck';
         const icon = ICONS[status] || '⬜';
-        html += `<div class="seat ${cls}" title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''}">
+        html += `<div class="seat ${cls}" style="cursor:pointer"
+          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''}"
+          onclick="highlightTodayRow('${emp.id}')">
           <span class="seat-icon">${icon}</span>
           <span class="seat-name">${emp.name}</span>
         </div>`;
@@ -4456,9 +4492,9 @@ function toast(msg) {
 Object.assign(window,{
   addEmployee,adminLogin,adminLogout,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
-  deleteEmp,exportCSV,loadStats,manualCheckin,openCarModal,
+  deleteEmp,exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,
-  printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,
+  printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,renderEmployees,
   renderFirstTimeResults,selectAndSaveEmp,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
