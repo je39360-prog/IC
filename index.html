@@ -602,15 +602,15 @@ function startFirebase() {
   // 초기 데이터 로드
   getDoc(DOC_REF).then(snap => {
     if (snap.exists()) {
+      // Firestore 데이터를 로컬 캐시에 저장 (항상 Firestore가 기준)
       localStorage.setItem(CACHE_KEY, JSON.stringify(snap.data()));
       if (typeof adminLoggedIn !== 'undefined' && adminLoggedIn) {
         loadTodayAdmin();
         renderEmployees();
       }
-    } else {
-      // 첫 실행: 로컬 데이터를 Firestore에 업로드
-      saveData(getData());
     }
+    // Firestore에 데이터 없으면 아무것도 하지 않음
+    // (새 기기 첫 접속 시 로컬 빈 데이터로 Firestore를 절대 덮어쓰지 않음)
   }).catch(e => console.error('Firestore 초기 로드 오류:', e));
 }
 
@@ -3528,26 +3528,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reasonModal').addEventListener('click', function(e) { if(e.target===this) closeReasonModal(); });
   setInterval(updateClock, 1000); updateClock();
   document.getElementById('reportDate').value = getToday();
-
-  // 샘플 데이터
-  if (!localStorage.getItem(CACHE_KEY)) {
-    const sample = {
-      employees: [
-        {id:'EMP001',name:'홍길동',team:'개발1팀',token:'tok_001',registered:getToday(),active:true},
-        {id:'EMP002',name:'김철수',team:'개발1팀',token:'tok_002',registered:getToday(),active:true},
-        {id:'EMP003',name:'이영희',team:'디자인팀',token:'tok_003',registered:getToday(),active:true},
-        {id:'EMP004',name:'박민수',team:'마케팅팀',token:'tok_004',registered:getToday(),active:true}
-      ],
-      records:[
-        {date:getToday(),empId:'EMP001',name:'홍길동',team:'개발1팀',time:'06:50:23',status:'출석',reason:'',method:'QR'},
-        {date:getToday(),empId:'EMP002',name:'김철수',team:'개발1팀',time:'07:05:44',status:'지각',reason:'교통체증',method:'QR'},
-        {date:getToday(),empId:'EMP003',name:'이영희',team:'디자인팀',time:'08:30:12',status:'결석',reason:'병가',method:'QR'}
-      ],
-      settings:{company:'이천물류',attendDeadline:'06:55',lateDeadline:'07:20'},
-      nextId:5
-    };
-    saveData(sample);
-  }
 
   // URL 파라미터 처리 (QR 스캔)
   const params = new URLSearchParams(window.location.search);
