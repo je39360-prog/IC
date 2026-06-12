@@ -569,7 +569,15 @@ function _defaultData() {
   return { employees: [], records: [], settings: { company: '이천물류', attendDeadline: '06:55', lateDeadline: '07:20' }, nextId: 1 };
 }
 function getData() {
-  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null') || _defaultData(); } catch(e) { return _defaultData(); }
+  let d;
+  try { d = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null') || _defaultData(); }
+  catch(e) { d = _defaultData(); }
+  // 필드 누락 시 기본값으로 보정 (Firestore에서 일부 필드가 삭제된 경우 대비)
+  if (!Array.isArray(d.employees)) d.employees = [];
+  if (!Array.isArray(d.records))   d.records   = [];
+  if (!d.settings) d.settings = { company:'이천물류', attendDeadline:'06:55', lateDeadline:'07:20' };
+  if (!d.nextId) d.nextId = 1;
+  return d;
 }
 async function saveData(data) {
   localStorage.setItem(CACHE_KEY, JSON.stringify(data));
