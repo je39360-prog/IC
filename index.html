@@ -218,7 +218,8 @@ tr:nth-child(even){background:#fafbfc}
 .seat-team-block{margin-bottom:16px}
 .seat-team-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .seat-team-title .seat-team-badges{display:flex;gap:4px;font-weight:400}
-.seat-grid{display:flex;flex-wrap:wrap;gap:6px}
+.seat-grid{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;border-radius:8px;transition:background .15s,box-shadow .15s;padding:4px}
+.seat-grid.drag-over{background:rgba(26,115,232,.08);box-shadow:0 0 0 2px var(--primary) inset}
 .seat{
   width:44px;height:52px;border-radius:8px 8px 4px 4px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -226,6 +227,7 @@ tr:nth-child(even){background:#fafbfc}
   transition:transform .15s;border:2px solid transparent;gap:2px;
 }
 .seat:hover{transform:scale(1.12);z-index:2}
+.seat:active{cursor:grabbing!important}
 .seat.attend {background:#e6f4ea;border-color:#34a853;color:#1e7e34}
 .seat.late   {background:#fff8e1;border-color:#fbbc04;color:#b06000}
 .seat.absent {background:#fce8e6;border-color:#ea4335;color:#c5221f}
@@ -3955,6 +3957,62 @@ function switchAdminTab(btn, tab) {
   if (tab==='stats') initStatDates();
 }
 
+// ============================================================
+// 의석 드래그 & 드롭 — 팀 이동
+// ============================================================
+let draggedEmpId = null, draggedEmpName = null;
+
+function seatDragStart(e) {
+  draggedEmpId = e.currentTarget.dataset.empid;
+  draggedEmpName = e.currentTarget.dataset.empname;
+  e.currentTarget.style.opacity = '0.4';
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', draggedEmpId);
+}
+
+function seatDragEnd(e) {
+  e.currentTarget.style.opacity = '1';
+  document.querySelectorAll('.seat-grid.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+
+function seatDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function seatDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function seatDrop(e) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const targetTeam = e.currentTarget.dataset.team;
+  if (!draggedEmpId || !targetTeam) return;
+
+  const data = getData();
+  const emp = data.employees.find(emp => emp.id === draggedEmpId);
+  if (!emp) return;
+
+  if (emp.team === targetTeam) { draggedEmpId = null; return; }
+
+  const fromTeam = emp.team;
+  emp.team = targetTeam;
+
+  // 오늘자 출석 기록의 팀명도 함께 갱신
+  const today = getToday();
+  data.records.forEach(r => {
+    if (r.empId === emp.id && r.date === today) r.team = targetTeam;
+  });
+
+  await saveData(data);
+  loadTodayAdmin();
+  toast(`${draggedEmpName}님이 ${fromTeam} → ${targetTeam}으로 이동되었습니다.`);
+  draggedEmpId = null;
+  draggedEmpName = null;
+}
+
 function highlightTodayRow(empId) {
   // 개인별 현황 테이블에서 해당 직원 행 찾기
   const tbody = document.getElementById('todayTable');
@@ -4080,14 +4138,19 @@ function loadTodayAdmin() {
             <span class="badge nocheck" style="font-size:10px;background:var(--border-light);color:var(--text2)">미체크 ${s.total-checked}</span>
           </div>
         </div>
-        <div class="seat-grid">`;
+        <div class="seat-grid" data-team="${team}" ondragover="seatDragOver(event)" ondragleave="seatDragLeave(event)" ondrop="seatDrop(event)">`;
       emps.forEach(emp => {
         const rec = todayRecords[emp.id];
         const status = rec ? rec.status : '미체크';
         const cls = STATUS_CLS[status] || 'nocheck';
         const icon = ICONS[status] || '⬜';
-        html += `<div class="seat ${cls}" style="cursor:pointer"
-          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''}"
+        html += `<div class="seat ${cls}" style="cursor:grab"
+          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''} — 드래그하면 다른 팀으로 이동"
+          draggable="true"
+          data-empid="${emp.id}"
+          data-empname="${emp.name}"
+          ondragstart="seatDragStart(event)"
+          ondragend="seatDragEnd(event)"
           onclick="highlightTodayRow('${emp.id}')">
           <span class="seat-icon">${icon}</span>
           <span class="seat-name">${emp.name}</span>
@@ -4476,6 +4539,7 @@ Object.assign(window,{
   openReasonModal,closeReasonModal,saveReasonModal,
   printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,renderEmployees,
   renderFirstTimeResults,selectAndSaveEmp,
+  seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
 </script>
