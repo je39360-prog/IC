@@ -3753,7 +3753,7 @@ async function doCheckin(reason) {
 const MY_KEY = 'my_employee';
 let mobileEmpList = null;
 function getSavedEmp()   { try { return JSON.parse(localStorage.getItem(MY_KEY)||'null'); } catch(e){return null;} }
-function saveMyEmp(emp)  { localStorage.setItem(MY_KEY, JSON.stringify({id:emp.id,name:emp.name,team:emp.team})); }
+function saveMyEmp(emp)  { localStorage.setItem(MY_KEY, JSON.stringify({id:emp.id,name:emp.name,team:emp.team,authVersion:emp.authVersion||0})); }
 function clearMyEmp()    { localStorage.removeItem(MY_KEY); }
 
 function showEmpSelect() {
@@ -3766,7 +3766,11 @@ function showEmpSelect() {
   if (saved) {
     const src = mobileEmpList?.length ? mobileEmpList : getData().employees;
     const found = src.find(e => e.id === saved.id && e.active !== false);
-    if (found) { showSavedEmpConfirm(found); return; }
+    // authVersion이 다르면 관리자가 재인증을 요청한 상태 → 다시 본인 확인
+    if (found && (found.authVersion||0) === (saved.authVersion||0)) {
+      showSavedEmpConfirm(found);
+      return;
+    }
     clearMyEmp();
   }
   // 저장된 정보 없으면 → 이름 직접 입력으로 본인 확인
@@ -4207,6 +4211,7 @@ function renderEmployees() {
       <td style="white-space:nowrap">
         ${act?`<button class="btn btn-sm btn-danger" onclick="toggleEmp('${emp.id}')"><i class="fas fa-ban"></i></button> `:`<button class="btn btn-sm btn-success" onclick="toggleEmp('${emp.id}')"><i class="fas fa-check"></i></button> `}
         <button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8" onclick="openCarModal('${emp.id}')" title="차량번호"><i class="fas fa-car"></i></button>
+        <button class="btn btn-sm" style="background:#fef7e0;color:#b06000" onclick="resetEmpAuth('${emp.id}','${emp.name}')" title="본인 인증 초기화 (다음 QR 스캔 시 다시 본인 확인)"><i class="fas fa-user-clock"></i></button>
         <button class="btn btn-sm btn-s" onclick="regenQR('${emp.id}')"><i class="fas fa-sync"></i></button>
         <button class="btn btn-sm btn-danger" onclick="deleteEmp('${emp.id}')"><i class="fas fa-trash"></i></button>
       </td></tr>`;
@@ -4242,6 +4247,16 @@ async function deleteEmp(id) {
 }
 
 let carTargetId=null;
+async function resetEmpAuth(empId, empName) {
+  if (!confirm(`${empName}님의 본인 인증을 초기화하시겠습니까?\n\n다음 QR 스캔 시 다시 이름을 입력하여 본인 확인을 해야 합니다.`)) return;
+  const data = getData();
+  const emp = data.employees.find(e => e.id === empId);
+  if (!emp) return;
+  emp.authVersion = (emp.authVersion || 0) + 1;
+  await saveData(data);
+  toast(`${empName}님의 본인 인증이 초기화되었습니다. 다음 QR 스캔 시 다시 확인합니다.`);
+}
+
 function openCarModal(id) {
   const emp=getData().employees.find(e=>e.id===id); if(!emp)return;
   carTargetId=id;
@@ -4544,7 +4559,7 @@ Object.assign(window,{
   addEmployee,adminLogin,adminLogout,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
   deleteEmp,exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
-  openReasonModal,closeReasonModal,saveReasonModal,
+  openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
   printDailyQR,qrLock,qrUnlock,regenQR,renderReport,renderEmpSelect,renderEmployees,
   renderFirstTimeResults,selectAndSaveEmp,
   seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
