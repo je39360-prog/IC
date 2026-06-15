@@ -325,6 +325,9 @@ tr:nth-child(even){background:#fafbfc}
         <input type="text" id="manualToken" placeholder="출석 코드 직접 입력" maxlength="80" autocomplete="off">
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
+      <div style="text-align:left;margin-top:8px;padding-left:2px">
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.9</span>
+      </div>
     </div>
 
     <div id="employeeInfo" class="hide" style="text-align:center">
@@ -383,6 +386,7 @@ tr:nth-child(even){background:#fafbfc}
         <button class="admin-tab active" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'today')"><i class="fas fa-chart-bar"></i> 현황</button>
         <button class="admin-tab" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'employees')"><i class="fas fa-users"></i> 직원</button>
         <button class="admin-tab" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'stats')"><i class="fas fa-chart-pie"></i> 통계</button>
+        <button class="admin-tab" style="flex:1;padding:8px 12px;border:none;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;background:transparent;color:var(--text2);transition:all var(--transition);white-space:nowrap" onclick="switchAdminTab(this,'settings')"><i class="fas fa-lock"></i> 설정</button>
       </div>
 
       <div id="adminToday" class="admin-panel">
@@ -469,6 +473,31 @@ tr:nth-child(even){background:#fafbfc}
             <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">전체 통계</div>
             <div style="position:relative;height:160px"><canvas id="pieChart"></canvas></div>
           </div>
+        </div>
+      </div>
+
+      <!-- 설정 패널 -->
+      <div id="adminSettings" class="admin-panel hide">
+        <div class="card-title" style="font-size:14px;margin-bottom:16px"><i class="fas fa-lock"></i> 관리자 비밀번호 변경</div>
+        <div style="max-width:320px;margin:0 auto">
+          <div style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">현재 비밀번호</label>
+            <input type="password" id="pwCurrent" placeholder="현재 비밀번호 입력" maxlength="20">
+          </div>
+          <div style="margin-bottom:12px">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">새 비밀번호</label>
+            <input type="password" id="pwNew" placeholder="새 비밀번호 입력" maxlength="20">
+          </div>
+          <div style="margin-bottom:20px">
+            <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">새 비밀번호 확인</label>
+            <input type="password" id="pwConfirm" placeholder="새 비밀번호 재입력" maxlength="20">
+          </div>
+          <button class="btn btn-p btn-block" onclick="changeAdminPw()">
+            <i class="fas fa-key"></i> 비밀번호 변경
+          </button>
+          <p style="font-size:11px;color:var(--text3);margin-top:10px;text-align:center">
+            <i class="fas fa-info-circle"></i> 비밀번호는 이 기기에 저장됩니다. (기본: 0743)
+          </p>
         </div>
       </div>
     </div>
@@ -3955,14 +3984,30 @@ function adminLogout() {
   document.getElementById('adminLogin').classList.remove('hide');
   document.getElementById('adminPw').value = '';
 }
+
+function changeAdminPw() {
+  const current = document.getElementById('pwCurrent').value;
+  const newPw   = document.getElementById('pwNew').value;
+  const pwConf  = document.getElementById('pwConfirm').value;
+  const stored  = localStorage.getItem('attendance_admin_pw') || '0743';
+
+  if (!current || !newPw || !pwConf) { toast('모든 항목을 입력해주세요.'); return; }
+  if (current !== stored) { toast('현재 비밀번호가 틀렸습니다.'); document.getElementById('pwCurrent').value=''; return; }
+  if (newPw.length < 4) { toast('새 비밀번호는 4자리 이상이어야 합니다.'); return; }
+  if (newPw !== pwConf) { toast('새 비밀번호가 일치하지 않습니다.'); document.getElementById('pwConfirm').value=''; return; }
+
+  localStorage.setItem('attendance_admin_pw', newPw);
+  document.getElementById('pwCurrent').value='';
+  document.getElementById('pwNew').value='';
+  document.getElementById('pwConfirm').value='';
+  toast('✅ 비밀번호가 변경되었습니다.');
+}
 function switchAdminTab(btn, tab) {
   document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   document.querySelectorAll('.admin-panel').forEach(p=>p.classList.add('hide'));
-  // tab은 소문자(today/employees/stats), ID는 대문자(adminToday/adminEmployees/adminStats)
-  const idMap = { today:'adminToday', employees:'adminEmployees', stats:'adminStats' };
-  const panelId = idMap[tab] || ('admin' + tab.charAt(0).toUpperCase() + tab.slice(1));
-  const panel = document.getElementById(panelId);
+  const idMap = { today:'adminToday', employees:'adminEmployees', stats:'adminStats', settings:'adminSettings' };
+  const panel = document.getElementById(idMap[tab] || ('admin'+tab.charAt(0).toUpperCase()+tab.slice(1)));
   if (panel) panel.classList.remove('hide');
   if (tab==='today') loadTodayAdmin();
   if (tab==='employees') renderEmployees();
@@ -4439,32 +4484,73 @@ function renderReport() {
   const data=getData();
   const recs={};
   data.records.filter(r=>r.date===date).forEach(r=>{recs[r.empId]=r;});
-  const rows=[]; let attend=0,late=0,absent=0;
+
+  // 팀별로 그룹핑
+  const teams={};
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
-    const r=recs[emp.id];
-    if(r){ rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
-      if(r.status==='출석')attend++; else if(r.status==='지각')late++; else absent++; }
-    else rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:'-',status:'미체크',reason:''});
+    if(!teams[emp.team]) teams[emp.team]=[];
+    teams[emp.team].push(emp);
   });
-  const total=data.employees.filter(e=>e.active!==false).length;
+
+  let totalAll=0,attendAll=0,lateAll=0,absentAll=0;
   const area=document.getElementById('reportContent'); if(!area)return;
-  let html=`<div class="report-header"><h1>${data.settings?.company||'이천물류'} 출석 현황</h1><p>${date} (${getDayName(date)})</p></div>
-    <div class="report-summary">
-      <div class="report-stat"><div class="n">${total}</div><div class="l">전체</div></div>
-      <div class="report-stat attend"><div class="n">${attend}</div><div class="l">출석</div></div>
-      <div class="report-stat late"><div class="n">${late}</div><div class="l">지각</div></div>
-      <div class="report-stat absent"><div class="n">${absent}</div><div class="l">결석</div></div>
-      <div class="report-stat"><div class="n">${total-attend-late-absent}</div><div class="l">미체크</div></div>
-    </div>
-    <table class="report-table"><thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead><tbody>`;
-  rows.forEach((r,i)=>{
-    const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
-    html+=`<tr><td>${i+1}</td><td>${r.id}</td><td style="text-align:left;padding-left:6px"><strong>${r.name}</strong></td><td>${r.team}</td>
-      <td style="font-weight:600;color:#1a73e8">${r.car||'-'}</td><td>${r.time}</td>
-      <td><span class="report-status ${cls}">${r.status}</span></td>
-      <td style="font-size:8.5px;color:var(--text2)">${r.reason||'-'}</td></tr>`;
+
+  let html=`<div class="report-header">
+    <h1>${data.settings?.company||'이천물류'} 출석 현황</h1>
+    <p>${date} (${getDayName(date)})</p>
+  </div>`;
+
+  // 전체 요약
+  data.employees.filter(e=>e.active!==false).forEach(emp=>{
+    const r=recs[emp.id]; totalAll++;
+    if(r){ if(r.status==='출석')attendAll++; else if(r.status==='지각')lateAll++; else absentAll++; }
   });
-  html+='</tbody></table>';
+  html+=`<div class="report-summary">
+    <div class="report-stat"><div class="n">${totalAll}</div><div class="l">전체</div></div>
+    <div class="report-stat attend"><div class="n">${attendAll}</div><div class="l">출석</div></div>
+    <div class="report-stat late"><div class="n">${lateAll}</div><div class="l">지각</div></div>
+    <div class="report-stat absent"><div class="n">${absentAll}</div><div class="l">결석</div></div>
+    <div class="report-stat"><div class="n">${totalAll-attendAll-lateAll-absentAll}</div><div class="l">미체크</div></div>
+  </div>`;
+
+  // 팀별 테이블
+  let no=1;
+  Object.keys(teams).forEach(team=>{
+    const emps=teams[team];
+    let tAttend=0,tLate=0,tAbsent=0;
+    emps.forEach(emp=>{
+      const r=recs[emp.id];
+      if(r){ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; }
+    });
+    const tNocheck=emps.length-tAttend-tLate-tAbsent;
+
+    html+=`<div style="margin-bottom:16px">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:#1a73e8;color:#fff;padding:7px 10px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700">
+        <span><i class="fas fa-users" style="margin-right:5px"></i>${team} (${emps.length}명)</span>
+        <span style="display:flex;gap:8px;font-weight:400">
+          <span>출석 ${tAttend}</span><span>지각 ${tLate}</span><span>결석 ${tAbsent}</span><span>미체크 ${tNocheck}</span>
+        </span>
+      </div>
+      <table class="report-table" style="margin-bottom:0;border-radius:0 0 6px 6px;overflow:hidden">
+        <thead><tr><th>No</th><th>ID</th><th>이름</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <tbody>`;
+    emps.forEach(emp=>{
+      const r=recs[emp.id];
+      const status=r?r.status:'미체크';
+      const cls=status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
+      html+=`<tr>
+        <td>${no++}</td><td>${emp.id}</td>
+        <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
+        <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+        <td>${r?r.time:'-'}</td>
+        <td><span class="report-status ${cls}">${status}</span></td>
+        <td style="font-size:8.5px;color:#666;text-align:left">${r?r.reason||'-':'-'}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>`;
+  });
+
+  if(!Object.keys(teams).length) html+='<div class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></div>';
   area.innerHTML=html;
 }
 
@@ -4556,7 +4642,7 @@ function toast(msg) {
 // 전역 노출
 // ============================================================
 Object.assign(window,{
-  addEmployee,adminLogin,adminLogout,closeCarModal,closeEmpSelect,
+  addEmployee,adminLogin,adminLogout,changeAdminPw,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
   deleteEmp,exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
