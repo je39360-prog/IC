@@ -577,7 +577,7 @@ tr:nth-child(even){background:#fafbfc}
 // FIREBASE
 // ============================================================
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getFirestore, doc, getDoc, setDoc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, arrayUnion, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const app = initializeApp({
   apiKey: "AIzaSyCZIH-rLo4K17wSsErE7fTbAS8ZPRz5lb8",
@@ -3756,11 +3756,31 @@ function confirmCheckinWithReason() {
 }
 async function doCheckin(reason) {
   const today = getToday(), time = getTimeStr(), status = getStatus(getHHMM());
+
+  // 중복 체크: 로컬 캐시 기준으로 오늘 이미 체크했는지 확인
   const data = getData();
-  if (!data.records.some(r => r.date===today && r.empId===currentEmp.id)) {
-    data.records.push({ date:today, empId:currentEmp.id, name:currentEmp.name, team:currentEmp.team, time, status, reason, method:'QR' });
+  if (data.records.some(r => r.date===today && r.empId===currentEmp.id)) {
+    toast(`${currentEmp.name}님은 이미 ${data.records.find(r=>r.date===today&&r.empId===currentEmp.id).status} 처리되었습니다.`);
+    currentEmp = null; return;
+  }
+
+  const record = {
+    date:today, empId:currentEmp.id, name:currentEmp.name,
+    team:currentEmp.team, time, status, reason, method:'QR'
+  };
+
+  // ✅ arrayUnion: records 필드에만 원자적으로 추가 → 동시 접속 충돌 없음
+  try {
+    await updateDoc(DOC_REF, { records: arrayUnion(record) });
+    // 로컬 캐시도 즉시 업데이트
+    data.records.push(record);
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data));
+  } catch(e) {
+    // 문서가 없는 경우(최초) setDoc으로 폴백
+    data.records.push(record);
     await saveData(data);
   }
+
   const icon = status==='출석'?'fa-check-circle':status==='지각'?'fa-clock':'fa-times-circle';
   const cls  = status==='출석'?'attend':status==='지각'?'late':'absent';
   document.getElementById('employeeInfo').classList.add('hide');
