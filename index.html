@@ -3990,7 +3990,8 @@ function selectEmpForCheckin(emp) {
 let adminLoggedIn = false;
 function adminLogin() {
   const pw = document.getElementById('adminPw').value;
-  const stored = localStorage.getItem('attendance_admin_pw') || '0743';
+  const data = getData();
+  const stored = data.settings?.adminPw || localStorage.getItem('attendance_admin_pw') || '0743';
   if (pw === stored) {
     adminLoggedIn = true;
     document.getElementById('adminLogin').classList.add('hide');
@@ -4005,22 +4006,27 @@ function adminLogout() {
   document.getElementById('adminPw').value = '';
 }
 
-function changeAdminPw() {
+async function changeAdminPw() {
   const current = document.getElementById('pwCurrent').value;
   const newPw   = document.getElementById('pwNew').value;
   const pwConf  = document.getElementById('pwConfirm').value;
-  const stored  = localStorage.getItem('attendance_admin_pw') || '0743';
+  const data    = getData();
+  const stored  = data.settings?.adminPw || localStorage.getItem('attendance_admin_pw') || '0743';
 
   if (!current || !newPw || !pwConf) { toast('모든 항목을 입력해주세요.'); return; }
   if (current !== stored) { toast('현재 비밀번호가 틀렸습니다.'); document.getElementById('pwCurrent').value=''; return; }
   if (newPw.length < 4) { toast('새 비밀번호는 4자리 이상이어야 합니다.'); return; }
   if (newPw !== pwConf) { toast('새 비밀번호가 일치하지 않습니다.'); document.getElementById('pwConfirm').value=''; return; }
 
-  localStorage.setItem('attendance_admin_pw', newPw);
+  // Firestore settings에 저장 → 모든 기기 동기화
+  if (!data.settings) data.settings = {};
+  data.settings.adminPw = newPw;
+  await saveData(data);
+
   document.getElementById('pwCurrent').value='';
   document.getElementById('pwNew').value='';
   document.getElementById('pwConfirm').value='';
-  toast('✅ 비밀번호가 변경되었습니다.');
+  toast('✅ 비밀번호가 변경되었습니다. 모든 기기에 적용됩니다.');
 }
 function switchAdminTab(btn, tab) {
   document.querySelectorAll('.admin-tab').forEach(b=>b.classList.remove('active'));
@@ -4580,7 +4586,8 @@ function renderReport() {
 let qrUnlocked = false;
 function qrUnlock() {
   const pw=document.getElementById('qrPw').value;
-  const stored=localStorage.getItem('attendance_admin_pw')||'0743';
+  const data=getData();
+  const stored=data.settings?.adminPw||localStorage.getItem('attendance_admin_pw')||'0743';
   if(pw===stored){
     qrUnlocked=true;
     document.getElementById('qrLogin').classList.add('hide');
