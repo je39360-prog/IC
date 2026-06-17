@@ -326,7 +326,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.12</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V.1.13</span>
       </div>
     </div>
 
@@ -507,10 +507,28 @@ tr:nth-child(even){background:#fafbfc}
 <!-- ============== 보고서 탭 ============== -->
 <div class="page" id="tab-report">
   <div class="card" style="padding:12px 16px">
-    <div class="filter-bar">
+    <!-- 날짜 모드 토글 -->
+    <div style="display:flex;gap:6px;margin-bottom:10px">
+      <button id="dateModeDay" class="btn btn-sm btn-p" style="flex:1" onclick="setDateMode('day')">
+        <i class="fas fa-calendar-day"></i> 단일 날짜
+      </button>
+      <button id="dateModePeriod" class="btn btn-sm btn-s" style="flex:1" onclick="setDateMode('period')">
+        <i class="fas fa-calendar-week"></i> 기간 조회
+      </button>
+    </div>
+    <!-- 단일 날짜 -->
+    <div id="dateInputDay" class="filter-bar">
       <label><i class="far fa-calendar-alt"></i> 날짜:</label>
       <input type="date" id="reportDate">
-      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 새로고침</button>
+      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 조회</button>
+    </div>
+    <!-- 기간 조회 -->
+    <div id="dateInputPeriod" class="filter-bar hide">
+      <label><i class="far fa-calendar-alt"></i> 시작:</label>
+      <input type="date" id="reportStart">
+      <label>종료:</label>
+      <input type="date" id="reportEnd">
+      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 조회</button>
     </div>
     <!-- 필터 탭 -->
     <div style="display:flex;gap:6px;margin-top:10px">
@@ -518,7 +536,7 @@ tr:nth-child(even){background:#fafbfc}
         <i class="fas fa-list"></i> 전체
       </button>
       <button id="filterIssue" class="btn btn-sm btn-s" onclick="setReportFilter('issue')" style="flex:1">
-        <i class="fas fa-exclamation-triangle"></i> 지각·결석만
+        <i class="fas fa-exclamation-triangle"></i> 지각·결석
       </button>
       <button class="btn btn-sm btn-s" onclick="printReport()" style="flex:1">
         <i class="fas fa-print"></i> 인쇄
@@ -3578,6 +3596,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('reasonModal').addEventListener('click', function(e) { if(e.target===this) closeReasonModal(); });
   setInterval(updateClock, 1000); updateClock();
   document.getElementById('reportDate').value = getToday();
+  document.getElementById('reportStart').value = getToday();
+  document.getElementById('reportEnd').value   = getToday();
 
   // URL 파라미터 처리 (QR 스캔)
   const params = new URLSearchParams(window.location.search);
@@ -4516,6 +4536,17 @@ function loadStats() {
 // ============================================================
 // REPORT
 // ============================================================
+let dateMode = 'day'; // 'day' | 'period'
+
+function setDateMode(mode) {
+  dateMode = mode;
+  document.getElementById('dateModeDay').className    = 'btn btn-sm ' + (mode==='day'   ?'btn-p':'btn-s');
+  document.getElementById('dateModePeriod').className = 'btn btn-sm ' + (mode==='period'?'btn-p':'btn-s');
+  document.getElementById('dateInputDay').classList.toggle('hide',    mode!=='day');
+  document.getElementById('dateInputPeriod').classList.toggle('hide', mode!=='period');
+  renderReport();
+}
+
 let reportFilter = 'all';
 
 function setReportFilter(filter) {
@@ -4530,10 +4561,23 @@ function setReportFilter(filter) {
 function printReport() { window.print(); }
 
 function renderReport() {
-  const date = document.getElementById('reportDate')?.value || getToday();
+  const isPeriod = dateMode === 'period';
+  const dateFrom = isPeriod ? (document.getElementById('reportStart')?.value||getToday()) : (document.getElementById('reportDate')?.value||getToday());
+  const dateTo   = isPeriod ? (document.getElementById('reportEnd')?.value||getToday())   : dateFrom;
+
+  if (isPeriod && dateFrom > dateTo) { toast('시작 날짜가 종료 날짜보다 늦습니다.'); return; }
+
   const data = getData();
   const recs = {};
-  data.records.filter(r=>r.date===date).forEach(r=>{ recs[r.empId]=r; });
+
+  if (isPeriod) {
+    // 기간 내 직원별 최신 기록 집계
+    data.records.filter(r => r.date >= dateFrom && r.date <= dateTo)
+      .sort((a,b) => a.date > b.date ? 1 : -1)
+      .forEach(r => { recs[r.empId] = recs[r.empId] || []; recs[r.empId].push(r); });
+  } else {
+    data.records.filter(r => r.date === dateFrom).forEach(r => { recs[r.empId] = r; });
+  }
 
   const teams = {};
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
@@ -4541,58 +4585,72 @@ function renderReport() {
     teams[emp.team].push(emp);
   });
 
+  // 요약 집계 (기간 모드: 출석 횟수 합산)
   let totalAll=0, attendAll=0, lateAll=0, absentAll=0;
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
-    const r=recs[emp.id]; totalAll++;
-    if(r){ if(r.status==='출석')attendAll++; else if(r.status==='지각')lateAll++; else absentAll++; }
+    totalAll++;
+    if (isPeriod) {
+      const empRecs = recs[emp.id] || [];
+      empRecs.forEach(r => { if(r.status==='출석')attendAll++; else if(r.status==='지각')lateAll++; else absentAll++; });
+    } else {
+      const r = recs[emp.id];
+      if(r){ if(r.status==='출석')attendAll++; else if(r.status==='지각')lateAll++; else absentAll++; }
+    }
   });
   const issueCount = lateAll + absentAll;
   const isIssue = reportFilter === 'issue';
 
   const area = document.getElementById('reportContent'); if(!area) return;
+  const periodLabel = isPeriod ? `${dateFrom} ~ ${dateTo}` : `${dateFrom} (${getDayName(dateFrom)})`;
 
   let html = `<div class="report-header">
     <h1>${data.settings?.company||'이천물류'} 출석 현황${isIssue?' — 지각·결석':''}</h1>
-    <p>${date} (${getDayName(date)})</p>
+    <p>${periodLabel}</p>
   </div>
   <div class="report-summary">
-    <div class="report-stat"><div class="n">${totalAll}</div><div class="l">전체</div></div>
+    <div class="report-stat"><div class="n">${totalAll}</div><div class="l">인원</div></div>
     <div class="report-stat attend"><div class="n">${attendAll}</div><div class="l">출석</div></div>
     <div class="report-stat late"><div class="n">${lateAll}</div><div class="l">지각</div></div>
     <div class="report-stat absent"><div class="n">${absentAll}</div><div class="l">결석</div></div>
-    <div class="report-stat"><div class="n">${totalAll-attendAll-lateAll-absentAll}</div><div class="l">미체크</div></div>
+    <div class="report-stat"><div class="n">${isPeriod?'-':totalAll-attendAll-lateAll-absentAll}</div><div class="l">미체크</div></div>
   </div>`;
 
   if (isIssue) {
-    // 지각·결석만 모드
     if (issueCount === 0) {
       html += `<div style="text-align:center;padding:48px 20px;color:#34a853">
         <i class="fas fa-check-circle" style="font-size:44px;display:block;margin-bottom:14px"></i>
         <div style="font-size:16px;font-weight:700">지각·결석 없음</div>
-        <div style="font-size:13px;margin-top:6px;color:#666">오늘 지각·결석 직원이 없습니다 🎉</div>
+        <div style="font-size:13px;margin-top:6px;color:#666">해당 기간 지각·결석 직원이 없습니다 🎉</div>
       </div>`;
     } else {
       html += `<div style="background:#fff8e1;border:1px solid #fbbc04;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#b06000;font-weight:600">
-        <i class="fas fa-exclamation-triangle"></i> 지각 ${lateAll}명 · 결석 ${absentAll}명 — 총 ${issueCount}명
+        <i class="fas fa-exclamation-triangle"></i> 지각 ${lateAll}건 · 결석 ${absentAll}건 — 총 ${issueCount}건
       </div>
       <table class="report-table">
-        <thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
       let no = 1;
       Object.keys(teams).forEach(team=>{
         teams[team].forEach(emp=>{
-          const r = recs[emp.id];
-          if (!r || (r.status!=='지각' && r.status!=='결석')) return;
-          const cls = r.status==='지각'?'late':'absent';
-          html += `<tr>
-            <td>${no++}</td><td>${emp.id}</td>
-            <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
-            <td>${team}</td>
-            <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
-            <td>${r.time}</td>
-            <td><span class="report-status ${cls}">${r.status}</span></td>
-            <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td>
-          </tr>`;
+          if (isPeriod) {
+            (recs[emp.id]||[]).filter(r=>r.status==='지각'||r.status==='결석').forEach(r=>{
+              const cls=r.status==='지각'?'late':'absent';
+              html+=`<tr><td>${no++}</td><td style="white-space:nowrap">${r.date}</td><td>${emp.id}</td>
+                <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td><td>${team}</td>
+                <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
+                <td><span class="report-status ${cls}">${r.status}</span></td>
+                <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+            });
+          } else {
+            const r=recs[emp.id];
+            if(!r||(r.status!=='지각'&&r.status!=='결석')) return;
+            const cls=r.status==='지각'?'late':'absent';
+            html+=`<tr><td>${no++}</td><td>${emp.id}</td>
+              <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td><td>${team}</td>
+              <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
+              <td><span class="report-status ${cls}">${r.status}</span></td>
+              <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+          }
         });
       });
       html += `</tbody></table>`;
@@ -4606,34 +4664,59 @@ function renderReport() {
     const emps = teams[team];
     let tAttend=0, tLate=0, tAbsent=0;
     emps.forEach(emp=>{
-      const r=recs[emp.id];
-      if(r){ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; }
+      if (isPeriod) {
+        (recs[emp.id]||[]).forEach(r=>{ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; });
+      } else {
+        const r=recs[emp.id];
+        if(r){ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; }
+      }
     });
-    const tNocheck = emps.length - tAttend - tLate - tAbsent;
+    const tNocheck = isPeriod ? '-' : emps.length-tAttend-tLate-tAbsent;
     html += `<div style="margin-bottom:16px">
       <div style="display:flex;align-items:center;justify-content:space-between;background:#1a73e8;color:#fff;padding:7px 10px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700">
         <span><i class="fas fa-users" style="margin-right:5px"></i>${team} (${emps.length}명)</span>
         <span style="display:flex;gap:8px;font-weight:400">
-          <span>출석 ${tAttend}</span><span>지각 ${tLate}</span><span>결석 ${tAbsent}</span><span>미체크 ${tNocheck}</span>
+          <span>출석 ${tAttend}</span><span>지각 ${tLate}</span><span>결석 ${tAbsent}</span>${!isPeriod?`<span>미체크 ${tNocheck}</span>`:''}
         </span>
       </div>
       <table class="report-table" style="margin-bottom:0;border-radius:0 0 6px 6px;overflow:hidden">
-        <thead><tr><th>No</th><th>ID</th><th>이름</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
     emps.forEach(emp=>{
-      const r = recs[emp.id];
-      const status = r ? r.status : '미체크';
-      const cls = status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
-      html += `<tr>
-        <td>${no++}</td><td>${emp.id}</td>
-        <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
-        <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
-        <td>${r?r.time:'-'}</td>
-        <td><span class="report-status ${cls}">${status}</span></td>
-        <td style="font-size:8.5px;color:#666;text-align:left">${r?r.reason||'-':'-'}</td>
-      </tr>`;
+      if (isPeriod) {
+        const empRecs = recs[emp.id] || [];
+        if (!empRecs.length) {
+          html+=`<tr><td>${no++}</td><td colspan="2" style="color:#9aa0a6">기록없음</td>
+            <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
+            <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+            <td>-</td><td><span class="report-status nocheck">-</span></td><td>-</td></tr>`;
+        } else {
+          empRecs.forEach((r,i)=>{
+            const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
+            html+=`<tr>
+              <td>${i===0?no:''}${i===0&&empRecs.length>1?`<span style="font-size:9px;color:#9aa0a6"> (${empRecs.length}건)</span>`:''}</td>
+              <td style="white-space:nowrap">${r.date}</td>
+              <td>${i===0?emp.id:''}</td>
+              <td style="text-align:left;padding-left:6px;font-weight:${i===0?700:400}">${i===0?emp.name:''}</td>
+              <td style="color:#1a73e8;font-weight:600">${i===0?emp.car||'-':''}</td>
+              <td>${r.time}</td>
+              <td><span class="report-status ${cls}">${r.status}</span></td>
+              <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+          });
+          no++;
+        }
+      } else {
+        const r=recs[emp.id]; const status=r?r.status:'미체크';
+        const cls=status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
+        html+=`<tr><td>${no++}</td><td>${emp.id}</td>
+          <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
+          <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+          <td>${r?r.time:'-'}</td>
+          <td><span class="report-status ${cls}">${status}</span></td>
+          <td style="font-size:8.5px;color:#666;text-align:left">${r?r.reason||'-':'-'}</td></tr>`;
+      }
     });
-    html += `</tbody></table></div>`;
+    html+=`</tbody></table></div>`;
   });
 
   if (!Object.keys(teams).length) html += '<div class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></div>';
@@ -4735,7 +4818,8 @@ Object.assign(window,{
   openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
   printDailyQR,printReport,qrLock,qrUnlock,regenQR,
   renderReport,renderEmpSelect,renderEmployees,renderFirstTimeResults,selectAndSaveEmp,
-  setReportFilter,seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
+  setDateMode,setReportFilter,
+  seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
 </script>
