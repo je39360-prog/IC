@@ -300,9 +300,18 @@ tr:nth-child(even){background:#fafbfc}
 <div class="page" id="tab-empsearch">
   <div class="card">
     <div class="card-title"><i class="fas fa-search"></i> 직원 정보 조회</div>
-    <div class="search-wrap">
-      <i class="fas fa-search"></i>
-      <input type="text" id="publicEmpSearch" placeholder="이름 또는 팀명으로 검색" oninput="renderPublicEmpSearch()">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <div class="search-wrap" style="margin-bottom:0">
+          <i class="fas fa-search"></i>
+          <input type="text" id="publicEmpSearch" placeholder="이름, 차량, 연락처 검색" oninput="renderPublicEmpSearch()">
+        </div>
+      </div>
+      <div style="width:140px">
+        <select id="publicTeamFilter" onchange="renderPublicEmpSearch()">
+          <option value="all">전체 팀</option>
+        </select>
+      </div>
     </div>
     <div class="table-wrap">
       <table>
@@ -4355,7 +4364,30 @@ function renderEmployees() {
 function renderPublicEmpSearch() {
   const data = getData();
   const search = (document.getElementById('publicEmpSearch')?.value||'').toLowerCase();
-  const filtered = data.employees.filter(e=>e.active!==false && (!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)||(e.car||'').toLowerCase().includes(search)||(e.phone||'').toLowerCase().includes(search)));
+  const teamFilter = document.getElementById('publicTeamFilter')?.value || 'all';
+  
+  // 팀 필터 목록 업데이트 (중복 제거 및 정렬)
+  const filterSelect = document.getElementById('publicTeamFilter');
+  if (filterSelect && filterSelect.options.length <= 1) {
+    const teams = [...new Set(data.employees.map(e => e.team))].filter(Boolean).sort();
+    teams.forEach(t => {
+      const opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      filterSelect.appendChild(opt);
+    });
+  }
+
+  const filtered = data.employees.filter(e => {
+    if (e.active === false) return false;
+    const matchesSearch = !search || 
+      e.name.toLowerCase().includes(search) || 
+      (e.team || '').toLowerCase().includes(search) || 
+      (e.car || '').toLowerCase().includes(search) || 
+      (e.phone || '').toLowerCase().includes(search);
+    const matchesTeam = teamFilter === 'all' || e.team === teamFilter;
+    return matchesSearch && matchesTeam;
+  });
+
   const tbody = document.getElementById('publicEmpTable');
   if(!tbody) return;
   tbody.innerHTML='';
@@ -4869,7 +4901,7 @@ Object.assign(window,{
   deleteEmp,exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
   printDailyQR,printReport,qrLock,qrUnlock,regenQR,
-  renderReport,renderEmpSelect,renderEmployees,renderFirstTimeResults,selectAndSaveEmp,
+  renderReport,renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
   setDateMode,setReportFilter,
   seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
