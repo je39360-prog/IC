@@ -4355,7 +4355,7 @@ function renderEmployees() {
 function renderPublicEmpSearch() {
   const data = getData();
   const search = (document.getElementById('publicEmpSearch')?.value||'').toLowerCase();
-  const filtered = data.employees.filter(e=>e.active!==false && (!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)));
+  const filtered = data.employees.filter(e=>e.active!==false && (!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)||(e.car||'').toLowerCase().includes(search)||(e.phone||'').toLowerCase().includes(search)));
   const tbody = document.getElementById('publicEmpTable');
   if(!tbody) return;
   tbody.innerHTML='';
