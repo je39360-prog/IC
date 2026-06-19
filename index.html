@@ -290,10 +290,35 @@ tr:nth-child(even){background:#fafbfc}
 
 <nav class="nav" id="mainNav">
   <button class="nav-btn active" data-tab="checkin"><i class="fas fa-camera"></i> 출석체크</button>
+  <button class="nav-btn" data-tab="empsearch"><i class="fas fa-search"></i> 직원조회</button>
   <button class="nav-btn" data-tab="admin"><i class="fas fa-cog"></i> 관리자</button>
   <button class="nav-btn" data-tab="report"><i class="fas fa-file-alt"></i> 보고서</button>
   <button class="nav-btn" data-tab="qrprint"><i class="fas fa-qrcode"></i> QR출력</button>
 </nav>
+
+<!-- ============== 직원조회 탭 ============== -->
+<div class="page" id="tab-empsearch">
+  <div class="card">
+    <div class="card-title"><i class="fas fa-search"></i> 직원 정보 조회</div>
+    <div class="search-wrap">
+      <i class="fas fa-search"></i>
+      <input type="text" id="publicEmpSearch" placeholder="이름 또는 팀명으로 검색" oninput="renderPublicEmpSearch()">
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>이름</th>
+            <th>팀명</th>
+            <th>차량번호</th>
+            <th>연락처</th>
+          </tr>
+        </thead>
+        <tbody id="publicEmpTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <!-- ============== 출석체크 탭 ============== -->
 <div class="page active" id="tab-checkin">
@@ -326,7 +351,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V.1.13</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V.1.12</span>
       </div>
     </div>
 
@@ -434,21 +459,25 @@ tr:nth-child(even){background:#fafbfc}
           <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-user-plus"></i> 직원 추가</div>
           <div class="add-form">
             <input type="text" id="newName" placeholder="이름">
-            <input type="text" id="newTeam" placeholder="팀명 (예: 개발1팀)">
-            <input type="text" id="newCar" placeholder="차량번호 (선택)" maxlength="10" style="text-transform:uppercase">
+            <input type="text" id="newTeam" placeholder="팀명">
+            <input type="text" id="newCar" placeholder="차량번호" maxlength="10" style="text-transform:uppercase">
+            <input type="text" id="newPhone" placeholder="연락처 (예: 010-1234-5678)">
             <button class="btn btn-p btn-sm" onclick="addEmployee()"><i class="fas fa-plus"></i> 추가</button>
           </div>
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
         <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="이름 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
-        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
 
-        <!-- 차량번호 수정 모달 -->
+        <!-- 직원 정보 수정 모달 -->
         <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
           <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease">
-            <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-car" style="color:var(--primary)"></i> 차량번호 등록/수정</h3>
+            <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
             <p id="carModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
-            <input type="text" id="carModalInput" placeholder="차량번호 입력 (예: 12가3456)" maxlength="10" style="margin-bottom:12px;text-transform:uppercase" onkeypress="if(event.key==='Enter')saveCarNumber()">
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">차량번호</label>
+            <input type="text" id="carModalInput" placeholder="차량번호 입력" maxlength="10" style="margin-bottom:12px;text-transform:uppercase">
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">연락처</label>
+            <input type="text" id="phoneModalInput" placeholder="연락처 입력" style="margin-bottom:12px">
             <div style="display:flex;gap:8px">
               <button class="btn btn-p" style="flex:1" onclick="saveCarNumber()"><i class="fas fa-save"></i> 저장</button>
               <button class="btn btn-s" style="flex:1" onclick="closeCarModal()"><i class="fas fa-times"></i> 취소</button>
@@ -536,7 +565,7 @@ tr:nth-child(even){background:#fafbfc}
         <i class="fas fa-list"></i> 전체
       </button>
       <button id="filterIssue" class="btn btn-sm btn-s" onclick="setReportFilter('issue')" style="flex:1">
-        <i class="fas fa-exclamation-triangle"></i> 지각·결석
+        <i class="fas fa-exclamation-triangle"></i> 지각·결석만
       </button>
       <button class="btn btn-sm btn-s" onclick="printReport()" style="flex:1">
         <i class="fas fa-print"></i> 인쇄
@@ -3589,6 +3618,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.dataset.tab === 'admin' && !document.getElementById('adminPanel').classList.contains('hide')) loadTodayAdmin();
       if (this.dataset.tab === 'report') renderReport();
       if (this.dataset.tab === 'qrprint') renderQRGrid();
+      if (this.dataset.tab === 'empsearch') renderPublicEmpSearch();
     });
   });
   document.getElementById('manualToken').addEventListener('keypress', e => { if(e.key==='Enter') manualCheckin(); });
@@ -4306,28 +4336,47 @@ function renderEmployees() {
   const tbody = document.getElementById('empTable');
   tbody.innerHTML='';
   filtered.forEach(emp=>{
-    const act=emp.active!==false, car=emp.car||'';
-    const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">미등록</span>';
-    tbody.innerHTML+=`<tr><td>${emp.id}</td><td><strong>${emp.name}</strong></td><td>${emp.team}</td><td>${carDisplay}</td>
+    const act=emp.active!==false, car=emp.car||'', phone=emp.phone||'';
+    const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+    const phoneDisplay=phone?`<span style="font-size:12px">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+    tbody.innerHTML+=`<tr><td>${emp.id}</td><td><strong>${emp.name}</strong></td><td>${emp.team}</td><td>${carDisplay}</td><td>${phoneDisplay}</td>
       <td><span class="badge ${act?'active':'inactive'}">${act?'활성':'비활성'}</span></td>
       <td style="white-space:nowrap">
         ${act?`<button class="btn btn-sm btn-danger" onclick="toggleEmp('${emp.id}')"><i class="fas fa-ban"></i></button> `:`<button class="btn btn-sm btn-success" onclick="toggleEmp('${emp.id}')"><i class="fas fa-check"></i></button> `}
-        <button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8" onclick="openCarModal('${emp.id}')" title="차량번호"><i class="fas fa-car"></i></button>
-        <button class="btn btn-sm" style="background:#fef7e0;color:#b06000" onclick="resetEmpAuth('${emp.id}','${emp.name}')" title="본인 인증 초기화 (다음 QR 스캔 시 다시 본인 확인)"><i class="fas fa-user-clock"></i></button>
+        <button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8" onclick="openCarModal('${emp.id}')" title="정보 수정"><i class="fas fa-edit"></i></button>
+        <button class="btn btn-sm" style="background:#fef7e0;color:#b06000" onclick="resetEmpAuth('${emp.id}','${emp.name}')" title="본인 인증 초기화"><i class="fas fa-user-clock"></i></button>
         <button class="btn btn-sm btn-s" onclick="regenQR('${emp.id}')"><i class="fas fa-sync"></i></button>
         <button class="btn btn-sm btn-danger" onclick="deleteEmp('${emp.id}')"><i class="fas fa-trash"></i></button>
       </td></tr>`;
   });
-  if (!filtered.length) tbody.innerHTML='<tr><td colspan="6" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+  if (!filtered.length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+}
+
+function renderPublicEmpSearch() {
+  const data = getData();
+  const search = (document.getElementById('publicEmpSearch')?.value||'').toLowerCase();
+  const filtered = data.employees.filter(e=>e.active!==false && (!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)));
+  const tbody = document.getElementById('publicEmpTable');
+  if(!tbody) return;
+  tbody.innerHTML='';
+  filtered.forEach(emp=>{
+    tbody.innerHTML+=`<tr>
+      <td><strong>${emp.name}</strong></td>
+      <td>${emp.team}</td>
+      <td style="color:var(--primary);font-weight:600">${emp.car||'-'}</td>
+      <td>${emp.phone||'-'}</td>
+    </tr>`;
+  });
+  if (!filtered.length) tbody.innerHTML='<tr><td colspan="4" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
 }
 
 async function addEmployee() {
-  const name=document.getElementById('newName').value.trim(), team=document.getElementById('newTeam').value.trim(), car=document.getElementById('newCar').value.trim();
+  const name=document.getElementById('newName').value.trim(), team=document.getElementById('newTeam').value.trim(), car=document.getElementById('newCar').value.trim(), phone=document.getElementById('newPhone').value.trim();
   if (!name||!team){toast('이름과 팀명을 입력해주세요.');return;}
   const data=getData(), id=genId(data);
-  data.employees.push({id,name,team,token:'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),registered:getToday(),active:true,car});
+  data.employees.push({id,name,team,token:'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),registered:getToday(),active:true,car,phone});
   await saveData(data);
-  document.getElementById('newName').value=''; document.getElementById('newTeam').value=''; document.getElementById('newCar').value='';
+  document.getElementById('newName').value=''; document.getElementById('newTeam').value=''; document.getElementById('newCar').value=''; document.getElementById('newPhone').value='';
   renderEmployees(); loadTodayAdmin(); toast(`${name}님이 추가되었습니다. (ID: ${id})`);
 }
 async function toggleEmp(id) {
@@ -4364,6 +4413,7 @@ function openCarModal(id) {
   carTargetId=id;
   document.getElementById('carModalName').textContent=`${emp.name} (${emp.team})`;
   document.getElementById('carModalInput').value=emp.car||'';
+  document.getElementById('phoneModalInput').value=emp.phone||'';
   document.getElementById('carModal').style.display='flex';
   setTimeout(()=>document.getElementById('carModalInput').focus(),100);
 }
@@ -4424,10 +4474,12 @@ async function saveReasonModal() {
 }
 async function saveCarNumber() {
   if(!carTargetId)return;
-  const car=document.getElementById('carModalInput').value.trim(), data=getData(); let empName='';
-  data.employees.forEach(e=>{if(e.id===carTargetId){e.car=car;empName=e.name;}});
+  const car=document.getElementById('carModalInput').value.trim();
+  const phone=document.getElementById('phoneModalInput').value.trim();
+  const data=getData(); let empName='';
+  data.employees.forEach(e=>{if(e.id===carTargetId){e.car=car;e.phone=phone;empName=e.name;}});
   await saveData(data); closeCarModal(); renderEmployees();
-  toast(`${empName}님의 차량번호가 ${car?car+'로 등록되었습니다.':'삭제되었습니다.'}`);
+  toast(`${empName}님의 정보가 수정되었습니다.`);
 }
 
 // ============================================================
