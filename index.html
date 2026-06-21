@@ -360,7 +360,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.15</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.16</span>
       </div>
     </div>
 
@@ -4130,38 +4130,102 @@ function seatDragEnd(e) {
 
 function seatDragOver(e) {
   e.preventDefault();
-  e.currentTarget.classList.add('drag-over');
+  if (e.currentTarget.classList.contains('seat-grid')) {
+    e.currentTarget.classList.add('drag-over');
+  }
   e.dataTransfer.dropEffect = 'move';
 }
 
+function seatDragOverItem(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  const seat = e.currentTarget;
+  const rect = seat.getBoundingClientRect();
+  const midpoint = rect.left + rect.width / 2;
+  
+  // 기존 드래그 오버 효과 제거
+  document.querySelectorAll('.seat').forEach(el => {
+    el.style.borderLeft = '';
+    el.style.borderRight = '';
+  });
+
+  if (e.clientX < midpoint) {
+    seat.style.borderLeft = '3px solid var(--primary)';
+    seat.dataset.dropPos = 'before';
+  } else {
+    seat.style.borderRight = '3px solid var(--primary)';
+    seat.dataset.dropPos = 'after';
+  }
+}
+
 function seatDragLeave(e) {
-  e.currentTarget.classList.remove('drag-over');
+  if (e.currentTarget.classList.contains('seat-grid')) {
+    e.currentTarget.classList.remove('drag-over');
+  }
+  if (e.currentTarget.classList.contains('seat')) {
+    e.currentTarget.style.borderLeft = '';
+    e.currentTarget.style.borderRight = '';
+  }
 }
 
 async function seatDrop(e) {
   e.preventDefault();
-  e.currentTarget.classList.remove('drag-over');
-  const targetTeam = e.currentTarget.dataset.team;
-  if (!draggedEmpId || !targetTeam) return;
+  document.querySelectorAll('.seat-grid').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.seat').forEach(el => {
+    el.style.borderLeft = '';
+    el.style.borderRight = '';
+  });
 
+  const targetGrid = e.currentTarget.closest('.seat-grid');
+  if (!targetGrid || !draggedEmpId) return;
+
+  const targetTeam = targetGrid.dataset.team;
   const data = getData();
-  const emp = data.employees.find(emp => emp.id === draggedEmpId);
+  const emp = data.employees.find(e => e.id === draggedEmpId);
   if (!emp) return;
 
-  if (emp.team === targetTeam) { draggedEmpId = null; return; }
+  // 드롭된 위치의 타겟 아이템 확인
+  const targetSeat = e.target.closest('.seat');
+  const targetEmpId = targetSeat ? targetSeat.dataset.empid : null;
+  const dropPos = targetSeat ? targetSeat.dataset.dropPos : null;
 
+  // 팀 변경 처리
   const fromTeam = emp.team;
   emp.team = targetTeam;
-
-  // 오늘자 출석 기록의 팀명도 함께 갱신
+  
+  // 오늘자 기록 팀명 동기화
   const today = getToday();
   data.records.forEach(r => {
     if (r.empId === emp.id && r.date === today) r.team = targetTeam;
   });
 
+  // 순서(order) 재배치 로직
+  let teamEmps = data.employees.filter(e => e.active !== false && e.team === targetTeam && e.id !== draggedEmpId);
+  teamEmps.sort((a,b) => (a.order||0) - (b.order||0));
+
+  if (targetEmpId) {
+    const targetIdx = teamEmps.findIndex(e => e.id === targetEmpId);
+    if (dropPos === 'before') {
+      teamEmps.splice(targetIdx, 0, emp);
+    } else {
+      teamEmps.splice(targetIdx + 1, 0, emp);
+    }
+  } else {
+    teamEmps.push(emp);
+  }
+
+  // 순서 값 재할당
+  teamEmps.forEach((e, idx) => { e.order = idx; });
+
   await saveData(data);
   loadTodayAdmin();
-  toast(`${draggedEmpName}님이 ${fromTeam} → ${targetTeam}으로 이동되었습니다.`);
+  
+  if (fromTeam !== targetTeam) {
+    toast(`${draggedEmpName}님이 ${fromTeam} → ${targetTeam}으로 이동되었습니다.`);
+  } else {
+    toast(`${draggedEmpName}님의 위치가 변경되었습니다.`);
+  }
+  
   draggedEmpId = null;
   draggedEmpName = null;
 }
@@ -4280,35 +4344,36 @@ function loadTodayAdmin() {
     Object.keys(teamStats).forEach(team => {
       const s = teamStats[team];
       const checked = s.attend + s.late + s.absent;
-      const emps = data.employees.filter(e => e.active !== false && e.team === team);
-      html += `<div class="seat-team-block">
-        <div class="seat-team-title">
-          <span><i class="fas fa-users" style="color:var(--primary);margin-right:4px"></i>${team}</span>
-          <div class="seat-team-badges">
-            <span class="badge attend" style="font-size:10px">출석 ${s.attend}</span>
-            <span class="badge late"   style="font-size:10px">지각 ${s.late}</span>
-            <span class="badge absent" style="font-size:10px">결석 ${s.absent}</span>
-            <span class="badge nocheck" style="font-size:10px;background:var(--border-light);color:var(--text2)">미체크 ${s.total-checked}</span>
-          </div>
-        </div>
-        <div class="seat-grid" data-team="${team}" ondragover="seatDragOver(event)" ondragleave="seatDragLeave(event)" ondrop="seatDrop(event)">`;
-      emps.forEach(emp => {
-        const rec = todayRecords[emp.id];
-        const status = rec ? rec.status : '미체크';
-        const cls = STATUS_CLS[status] || 'nocheck';
-        const icon = ICONS[status] || '⬜';
-        html += `<div class="seat ${cls}" style="cursor:grab"
-          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''} — 드래그하면 다른 팀으로 이동"
-          draggable="true"
-          data-empid="${emp.id}"
-          data-empname="${emp.name}"
-          ondragstart="seatDragStart(event)"
-          ondragend="seatDragEnd(event)"
-          onclick="highlightTodayRow('${emp.id}')">
-          <span class="seat-icon">${icon}</span>
-          <span class="seat-name">${emp.name}</span>
-        </div>`;
-      });
+      const emps = data.employees.filter(e => e.active !== false && e.team === team).sort((a,b) => (a.order||0) - (b.order||0));
+	      html += `<div class="seat-team-block">
+	        <div class="seat-team-title">
+	          <span><i class="fas fa-users" style="color:var(--primary);margin-right:4px"></i>${team}</span>
+	          <div class="seat-team-badges">
+	            <span class="badge attend" style="font-size:10px">출석 ${s.attend}</span>
+	            <span class="badge late"   style="font-size:10px">지각 ${s.late}</span>
+	            <span class="badge absent" style="font-size:10px">결석 ${s.absent}</span>
+	            <span class="badge nocheck" style="font-size:10px;background:var(--border-light);color:var(--text2)">미체크 ${s.total-checked}</span>
+	          </div>
+	        </div>
+	        <div class="seat-grid" data-team="${team}" ondragover="seatDragOver(event)" ondragleave="seatDragLeave(event)" ondrop="seatDrop(event)">`;
+	      emps.forEach(emp => {
+	        const rec = todayRecords[emp.id];
+	        const status = rec ? rec.status : '미체크';
+	        const cls = STATUS_CLS[status] || 'nocheck';
+	        const icon = ICONS[status] || '⬜';
+	        html += `<div class="seat ${cls}" style="cursor:grab"
+	          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''} — 드래그하여 위치 변경"
+	          draggable="true"
+	          data-empid="${emp.id}"
+	          data-empname="${emp.name}"
+	          ondragstart="seatDragStart(event)"
+	          ondragover="seatDragOverItem(event)"
+	          ondragend="seatDragEnd(event)"
+	          onclick="highlightTodayRow('${emp.id}')">
+	          <span class="seat-icon">${icon}</span>
+	          <span class="seat-name">${emp.name}</span>
+	        </div>`;
+	      });
       html += `</div></div>`;
     });
     if (!Object.keys(teamStats).length) {
