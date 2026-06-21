@@ -360,7 +360,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.16</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.17</span>
       </div>
     </div>
 
@@ -4285,6 +4285,13 @@ function loadTodayAdmin() {
   });
   const total = data.employees.filter(e=>e.active!==false).length;
   const nocheck = total - attend - late - absent;
+
+  // 직원 ID 기준으로 오름차순 정렬 (숫자형 ID 대응)
+  rows.sort((a, b) => {
+    const idA = parseInt(a.id) || 0;
+    const idB = parseInt(b.id) || 0;
+    return idA - idB || a.id.localeCompare(b.id);
+  });
 
   // 요약 카드
   const sumDiv = document.getElementById('todaySummary');
