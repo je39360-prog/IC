@@ -360,7 +360,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.14</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V.1.12</span>
       </div>
     </div>
 
@@ -574,7 +574,7 @@ tr:nth-child(even){background:#fafbfc}
         <i class="fas fa-list"></i> 전체
       </button>
       <button id="filterIssue" class="btn btn-sm btn-s" onclick="setReportFilter('issue')" style="flex:1">
-        <i class="fas fa-exclamation-triangle"></i> 지각·결석
+        <i class="fas fa-exclamation-triangle"></i> 지각·결석만
       </button>
       <button class="btn btn-sm btn-s" onclick="printReport()" style="flex:1">
         <i class="fas fa-print"></i> 인쇄
@@ -4396,7 +4396,7 @@ function renderPublicEmpSearch() {
       <td><strong>${emp.name}</strong></td>
       <td>${emp.team}</td>
       <td style="color:var(--primary);font-weight:600">${emp.car||'-'}</td>
-      <td>${emp.phone||'-'}</td>
+      <td>${emp.phone ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>` : '-'}</td>
     </tr>`;
   });
   if (!filtered.length) tbody.innerHTML='<tr><td colspan="4" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
