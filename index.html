@@ -220,6 +220,9 @@ tr:nth-child(even){background:#fafbfc}
 .seat-team-title .seat-team-badges{display:flex;gap:4px;font-weight:400}
 .seat-grid{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;border-radius:8px;transition:background .15s,box-shadow .15s;padding:4px}
 .seat-grid.drag-over{background:rgba(26,115,232,.08);box-shadow:0 0 0 2px var(--primary) inset}
+#eduView.drag-over{background:rgba(142,68,173,.08)!important;box-shadow:0 0 0 2px #8e44ad inset!important}
+.seat.edu{background:#f3e5f5;border-color:#8e44ad;color:#6c3483}
+.seat-edu-team{font-size:8px;background:#8e44ad;color:#fff;border-radius:4px;padding:1px 4px;margin-top:2px;line-height:1.4;text-align:center;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seat{
   width:44px;height:52px;border-radius:8px 8px 4px 4px;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
@@ -360,7 +363,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.17</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.19</span>
       </div>
     </div>
 
@@ -437,6 +440,19 @@ tr:nth-child(even){background:#fafbfc}
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-th"></i> 팀별 실시간 출석 현황</div>
         <div id="seatView" style="margin-bottom:16px"></div>
+
+        <!-- 교육 섹션 -->
+        <div class="card-title" style="font-size:14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+          <span><i class="fas fa-graduation-cap" style="color:#8e44ad"></i> 교육</span>
+          <span id="eduCount" style="font-size:11px;font-weight:400;color:var(--text2)">0명</span>
+        </div>
+        <div id="eduView"
+          style="min-height:64px;border:2px dashed #c39bd3;border-radius:12px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;transition:background .15s,box-shadow .15s;position:relative"
+          ondragover="eduDragOver(event)" ondragleave="eduDragLeave(event)" ondrop="eduDrop(event)">
+          <span id="eduEmpty" style="color:#c39bd3;font-size:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none">
+            <i class="fas fa-arrows-alt"></i> 직원을 이곳으로 드래그하세요
+          </span>
+        </div>
 
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
         <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th><th>수정</th></tr></thead><tbody id="todayTable"></tbody></table></div>
@@ -575,6 +591,9 @@ tr:nth-child(even){background:#fafbfc}
       </button>
       <button id="filterIssue" class="btn btn-sm btn-s" onclick="setReportFilter('issue')" style="flex:1">
         <i class="fas fa-exclamation-triangle"></i> 지각·결석
+      </button>
+      <button id="filterEdu" class="btn btn-sm btn-s" onclick="setReportFilter('edu')" style="flex:1">
+        <i class="fas fa-graduation-cap"></i> 교육
       </button>
       <button class="btn btn-sm btn-s" onclick="printReport()" style="flex:1">
         <i class="fas fa-print"></i> 인쇄
@@ -4119,43 +4138,34 @@ function seatDragStart(e) {
   draggedEmpId = e.currentTarget.dataset.empid;
   draggedEmpName = e.currentTarget.dataset.empname;
   e.currentTarget.style.opacity = '0.4';
-  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.effectAllowed = 'copyMove';
   e.dataTransfer.setData('text/plain', draggedEmpId);
 }
 
 function seatDragEnd(e) {
   e.currentTarget.style.opacity = '1';
   document.querySelectorAll('.seat-grid.drag-over').forEach(el => el.classList.remove('drag-over'));
+  const eduView = document.getElementById('eduView');
+  if (eduView) eduView.classList.remove('drag-over');
+  document.querySelectorAll('.seat').forEach(el => { el.style.borderLeft=''; el.style.borderRight=''; });
+  draggedEmpId = null; draggedEmpName = null;
 }
 
 function seatDragOver(e) {
   e.preventDefault();
-  if (e.currentTarget.classList.contains('seat-grid')) {
-    e.currentTarget.classList.add('drag-over');
-  }
+  e.currentTarget.classList.add('drag-over');
   e.dataTransfer.dropEffect = 'move';
 }
 
 function seatDragOverItem(e) {
   e.preventDefault();
-  e.stopPropagation();
+  // stopPropagation 제거 — eduView까지 이벤트 전달돼야 함
   const seat = e.currentTarget;
   const rect = seat.getBoundingClientRect();
   const midpoint = rect.left + rect.width / 2;
-  
-  // 기존 드래그 오버 효과 제거
-  document.querySelectorAll('.seat').forEach(el => {
-    el.style.borderLeft = '';
-    el.style.borderRight = '';
-  });
-
-  if (e.clientX < midpoint) {
-    seat.style.borderLeft = '3px solid var(--primary)';
-    seat.dataset.dropPos = 'before';
-  } else {
-    seat.style.borderRight = '3px solid var(--primary)';
-    seat.dataset.dropPos = 'after';
-  }
+  document.querySelectorAll('.seat').forEach(el => { el.style.borderLeft=''; el.style.borderRight=''; });
+  if (e.clientX < midpoint) { seat.style.borderLeft = '3px solid var(--primary)'; seat.dataset.dropPos = 'before'; }
+  else { seat.style.borderRight = '3px solid var(--primary)'; seat.dataset.dropPos = 'after'; }
 }
 
 function seatDragLeave(e) {
@@ -4228,6 +4238,83 @@ async function seatDrop(e) {
   
   draggedEmpId = null;
   draggedEmpName = null;
+}
+
+// ============================================================
+// 교육 드래그앤드롭
+// ============================================================
+function eduDragOver(e) {
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+  e.dataTransfer.dropEffect = 'copy';
+}
+
+function eduDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+
+async function eduDrop(e) {
+  e.preventDefault();
+  if (e.currentTarget) e.currentTarget.classList.remove('drag-over');
+  if (!draggedEmpId) return;
+
+  const empId = draggedEmpId;
+  const empName = draggedEmpName;
+  draggedEmpId = null; draggedEmpName = null;
+
+  const data = getData();
+  const emp = data.employees.find(e => e.id === empId);
+  if (!emp) return;
+
+  if (!Array.isArray(data.eduList)) data.eduList = [];
+
+  if (data.eduList.find(x => x.id === emp.id)) {
+    toast(`${emp.name}님은 이미 교육 명단에 있습니다.`);
+    return;
+  }
+
+  data.eduList.push({ id: emp.id, name: emp.name, team: emp.team });
+  await saveData(data);
+  renderEduView(data);
+  toast(`${emp.name}님(${emp.team})이 교육 명단에 추가되었습니다.`);
+}
+
+async function removeFromEdu(empId) {
+  const data = getData();
+  if (!Array.isArray(data.eduList)) return;
+  const emp = data.eduList.find(x => x.id === empId);
+  data.eduList = data.eduList.filter(x => x.id !== empId);
+  await saveData(data);
+  renderEduView(data);
+  if (emp) toast(`${emp.name}님이 교육 명단에서 제거되었습니다.`);
+}
+
+function renderEduView(data) {
+  const wrap = document.getElementById('eduView');
+  const countEl = document.getElementById('eduCount');
+  const emptyEl = document.getElementById('eduEmpty');
+  if (!wrap) return;
+
+  const list = Array.isArray(data.eduList) ? data.eduList : [];
+  if (countEl) countEl.textContent = list.length + '명';
+  if (emptyEl) emptyEl.style.display = list.length ? 'none' : '';
+
+  // 기존 카드 제거 (eduEmpty 유지)
+  wrap.querySelectorAll('.seat.edu').forEach(el => el.remove());
+
+  list.forEach(edu => {
+    const div = document.createElement('div');
+    div.className = 'seat edu';
+    div.style.cssText = 'cursor:default;position:relative';
+    div.title = `${edu.name} (${edu.team}) — 클릭하여 제거`;
+    div.innerHTML = `
+      <span class="seat-icon">🎓</span>
+      <span class="seat-name">${edu.name}</span>
+      <span onclick="removeFromEdu('${edu.id}')" title="제거"
+        style="position:absolute;top:2px;right:2px;width:14px;height:14px;background:#8e44ad;color:#fff;
+        border-radius:50%;font-size:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;line-height:1">✕</span>`;
+    wrap.appendChild(div);
+  });
 }
 
 function highlightTodayRow(empId) {
@@ -4388,6 +4475,9 @@ function loadTodayAdmin() {
     }
     seatView.innerHTML = html;
   }
+
+  // 교육 뷰 렌더링
+  renderEduView(data);
 
   // 개인별 현황 테이블
   const tbody = document.getElementById('todayTable');
@@ -4709,8 +4799,10 @@ function setReportFilter(filter) {
   reportFilter = filter;
   const btnAll   = document.getElementById('filterAll');
   const btnIssue = document.getElementById('filterIssue');
+  const btnEdu   = document.getElementById('filterEdu');
   if (btnAll)   btnAll.className   = 'btn btn-sm ' + (filter==='all'  ?'btn-p':'btn-s');
   if (btnIssue) btnIssue.className = 'btn btn-sm ' + (filter==='issue'?'btn-p':'btn-s');
+  if (btnEdu)   btnEdu.className   = 'btn btn-sm ' + (filter==='edu'  ?'btn-p':'btn-s');
   renderReport();
 }
 
@@ -4755,12 +4847,13 @@ function renderReport() {
   });
   const issueCount = lateAll + absentAll;
   const isIssue = reportFilter === 'issue';
+  const isEdu   = reportFilter === 'edu';
 
   const area = document.getElementById('reportContent'); if(!area) return;
   const periodLabel = isPeriod ? `${dateFrom} ~ ${dateTo}` : `${dateFrom} (${getDayName(dateFrom)})`;
 
   let html = `<div class="report-header">
-    <h1>${data.settings?.company||'이천물류'} 출석 현황${isIssue?' — 지각·결석':''}</h1>
+    <h1>${data.settings?.company||'이천물류'} 출석 현황${isIssue?' — 지각·결석':isEdu?' — 교육 명단':''}</h1>
     <p>${periodLabel}</p>
   </div>
   <div class="report-summary">
@@ -4770,6 +4863,41 @@ function renderReport() {
     <div class="report-stat absent"><div class="n">${absentAll}</div><div class="l">결석</div></div>
     <div class="report-stat"><div class="n">${isPeriod?'-':totalAll-attendAll-lateAll-absentAll}</div><div class="l">미체크</div></div>
   </div>`;
+
+  // ── 교육 필터 ──────────────────────────────────────────────
+  if (isEdu) {
+    const eduList = Array.isArray(data.eduList) ? data.eduList : [];
+    if (!eduList.length) {
+      html += `<div style="text-align:center;padding:48px 20px;color:#8e44ad">
+        <i class="fas fa-graduation-cap" style="font-size:44px;display:block;margin-bottom:14px"></i>
+        <div style="font-size:16px;font-weight:700">교육 대상자 없음</div>
+        <div style="font-size:13px;margin-top:6px;color:#666">현황 탭에서 교육 명단에 직원을 추가해주세요.</div>
+      </div>`;
+    } else {
+      html += `<div style="background:#f3e5f5;border:1px solid #8e44ad;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#6c3483;font-weight:600">
+        <i class="fas fa-graduation-cap"></i> 교육 대상자 총 ${eduList.length}명
+      </div>
+      <table class="report-table">
+        <thead><tr><th>No</th><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>연락처</th><th>오늘 출석현황</th></tr></thead>
+        <tbody>`;
+      eduList.forEach((edu, i) => {
+        const emp = data.employees.find(e => e.id === edu.id) || edu;
+        const rec = recs[edu.id];
+        const status = rec ? rec.status : '미체크';
+        const cls = status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
+        html += `<tr>
+          <td>${i+1}</td><td>${emp.id||edu.id}</td>
+          <td style="text-align:left;padding-left:6px;font-weight:700">${edu.name}</td>
+          <td><span style="font-size:9px;background:#8e44ad;color:#fff;padding:1px 5px;border-radius:4px">${edu.team}</span></td>
+          <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+          <td>${emp.phone||'-'}</td>
+          <td><span class="report-status ${cls}">${status}</span></td>
+        </tr>`;
+      });
+      html += `</tbody></table>`;
+    }
+    area.innerHTML = html; return;
+  }
 
   if (isIssue) {
     if (issueCount === 0) {
@@ -4970,12 +5098,13 @@ function toast(msg) {
 Object.assign(window,{
   addEmployee,adminLogin,adminLogout,changeAdminPw,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
-  deleteEmp,exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
+  deleteEmp,eduDragOver,eduDragLeave,eduDrop,removeFromEdu,
+  exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
   printDailyQR,printReport,qrLock,qrUnlock,regenQR,
   renderReport,renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
   setDateMode,setReportFilter,
-  seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDrop,
+  seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDragOverItem,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
 });
 </script>
