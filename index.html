@@ -364,7 +364,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.21</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.22</span>
       </div>
     </div>
 
@@ -490,6 +490,8 @@ tr:nth-child(even){background:#fafbfc}
               <option value="">일반</option>
               <option value="팀장">팀장</option>
               <option value="부팀장">부팀장</option>
+              <option value="대명장">대명장</option>
+              <option value="명장">명장</option>
             </select>
             <input type="text" id="newCar" placeholder="차량번호" maxlength="10" style="text-transform:uppercase">
             <input type="text" id="newPhone" placeholder="연락처 (예: 010-1234-5678)">
@@ -502,15 +504,20 @@ tr:nth-child(even){background:#fafbfc}
 
         <!-- 직원 정보 수정 모달 -->
         <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
-          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease">
-            <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
-            <p id="carModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
+          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto">
+            <h3 style="font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">이름</label>
+            <input type="text" id="empNameInput" placeholder="이름 입력" maxlength="20" style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">팀명</label>
+            <input type="text" id="empTeamInput" placeholder="팀명 입력" maxlength="20" style="margin-bottom:12px">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">직책</label>
             <div style="display:flex;gap:6px;margin-bottom:12px">
               <select id="roleModalInput" style="flex:1">
                 <option value="">일반</option>
                 <option value="팀장">팀장</option>
                 <option value="부팀장">부팀장</option>
+                <option value="대명장">대명장</option>
+                <option value="명장">명장</option>
               </select>
               <button class="btn btn-sm btn-danger" onclick="clearRole()" title="직책 삭제">
                 <i class="fas fa-times"></i> 삭제
@@ -519,7 +526,7 @@ tr:nth-child(even){background:#fafbfc}
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">차량번호</label>
             <input type="text" id="carModalInput" placeholder="차량번호 입력" maxlength="10" style="margin-bottom:12px;text-transform:uppercase">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">연락처</label>
-            <input type="text" id="phoneModalInput" placeholder="연락처 입력" style="margin-bottom:12px">
+            <input type="text" id="phoneModalInput" placeholder="연락처 입력" style="margin-bottom:16px">
             <div style="display:flex;gap:8px">
               <button class="btn btn-p" style="flex:1" onclick="saveCarNumber()"><i class="fas fa-save"></i> 저장</button>
               <button class="btn btn-s" style="flex:1" onclick="closeCarModal()"><i class="fas fa-times"></i> 취소</button>
@@ -4696,12 +4703,13 @@ async function resetEmpAuth(empId, empName) {
 function openCarModal(id) {
   const emp=getData().employees.find(e=>e.id===id); if(!emp)return;
   carTargetId=id;
-  document.getElementById('carModalName').textContent=`${emp.name} (${emp.team})`;
+  document.getElementById('empNameInput').value=emp.name||'';
+  document.getElementById('empTeamInput').value=emp.team||'';
   document.getElementById('roleModalInput').value=emp.role||'';
   document.getElementById('carModalInput').value=emp.car||'';
   document.getElementById('phoneModalInput').value=emp.phone||'';
   document.getElementById('carModal').style.display='flex';
-  setTimeout(()=>document.getElementById('carModalInput').focus(),100);
+  setTimeout(()=>document.getElementById('empNameInput').focus(),100);
 }
 function closeCarModal() { document.getElementById('carModal').style.display='none'; carTargetId=null; }
 
@@ -4765,11 +4773,24 @@ async function saveReasonModal() {
 }
 async function saveCarNumber() {
   if(!carTargetId)return;
+  const name=document.getElementById('empNameInput').value.trim();
+  const team=document.getElementById('empTeamInput').value.trim();
   const role=document.getElementById('roleModalInput').value;
   const car=document.getElementById('carModalInput').value.trim();
   const phone=document.getElementById('phoneModalInput').value.trim();
+  if(!name||!team){toast('이름과 팀명은 필수입니다.');return;}
   const data=getData(); let empName='';
-  data.employees.forEach(e=>{if(e.id===carTargetId){e.role=role;e.car=car;e.phone=phone;empName=e.name;}});
+  data.employees.forEach(e=>{
+    if(e.id===carTargetId){
+      e.name=name; e.team=team; e.role=role; e.car=car; e.phone=phone;
+      empName=name;
+    }
+  });
+  // 오늘 출석 기록의 이름/팀명도 동기화
+  const today=getToday();
+  data.records.forEach(r=>{
+    if(r.empId===carTargetId&&r.date===today){r.name=name;r.team=team;}
+  });
   await saveData(data); closeCarModal(); renderEmployees(); loadTodayAdmin();
   toast(`${empName}님의 정보가 수정되었습니다.`);
 }
@@ -4925,10 +4946,15 @@ function renderReport() {
     data.records.filter(r => r.date === dateFrom).forEach(r => { recs[r.empId] = r; });
   }
 
+  const ROLE_ORDER = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'':4};
   const teams = {};
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
     if(!teams[emp.team]) teams[emp.team]=[];
     teams[emp.team].push(emp);
+  });
+  // 각 팀 안에서 팀장→부팀장→일반 순 정렬
+  Object.keys(teams).forEach(team=>{
+    teams[team].sort((a,b)=>(ROLE_ORDER[a.role||'']??4)-(ROLE_ORDER[b.role||'']??4));
   });
 
   // 요약 집계 (기간 모드: 출석 횟수 합산)
