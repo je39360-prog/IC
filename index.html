@@ -363,7 +363,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.19</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.20</span>
       </div>
     </div>
 
@@ -4140,6 +4140,36 @@ function seatDragStart(e) {
   e.currentTarget.style.opacity = '0.4';
   e.dataTransfer.effectAllowed = 'copyMove';
   e.dataTransfer.setData('text/plain', draggedEmpId);
+
+  // 드래그 중 자동 스크롤
+  let scrollTimer = null;
+  const ZONE = 100;  // 화면 상하 감지 영역 (px)
+  const SPEED = 12;  // 스크롤 속도 (px)
+
+  function autoScroll(ev) {
+    const y = ev.clientY;
+    const h = window.innerHeight;
+    clearInterval(scrollTimer);
+    if (y < ZONE) {
+      // 위쪽 영역 — 위로 스크롤
+      scrollTimer = setInterval(() => window.scrollBy(0, -SPEED), 16);
+    } else if (y > h - ZONE) {
+      // 아래쪽 영역 — 아래로 스크롤
+      scrollTimer = setInterval(() => window.scrollBy(0, SPEED), 16);
+    }
+  }
+
+  function stopAutoScroll() {
+    clearInterval(scrollTimer);
+    scrollTimer = null;
+    document.removeEventListener('dragover', autoScroll);
+    document.removeEventListener('dragend',  stopAutoScroll);
+    document.removeEventListener('drop',     stopAutoScroll);
+  }
+
+  document.addEventListener('dragover', autoScroll);
+  document.addEventListener('dragend',  stopAutoScroll);
+  document.addEventListener('drop',     stopAutoScroll);
 }
 
 function seatDragEnd(e) {
