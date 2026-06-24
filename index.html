@@ -322,6 +322,7 @@ tr:nth-child(even){background:#fafbfc}
           <tr>
             <th>이름</th>
             <th>팀명</th>
+            <th>직책</th>
             <th>차량번호</th>
             <th>연락처</th>
           </tr>
@@ -363,7 +364,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.20</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.21</span>
       </div>
     </div>
 
@@ -485,6 +486,11 @@ tr:nth-child(even){background:#fafbfc}
           <div class="add-form">
             <input type="text" id="newName" placeholder="이름">
             <input type="text" id="newTeam" placeholder="팀명">
+            <select id="newRole" style="flex:1;min-width:100px">
+              <option value="">일반</option>
+              <option value="팀장">팀장</option>
+              <option value="부팀장">부팀장</option>
+            </select>
             <input type="text" id="newCar" placeholder="차량번호" maxlength="10" style="text-transform:uppercase">
             <input type="text" id="newPhone" placeholder="연락처 (예: 010-1234-5678)">
             <button class="btn btn-p btn-sm" onclick="addEmployee()"><i class="fas fa-plus"></i> 추가</button>
@@ -492,13 +498,24 @@ tr:nth-child(even){background:#fafbfc}
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
         <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="이름 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
-        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>직책</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
 
         <!-- 직원 정보 수정 모달 -->
         <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
           <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:360px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease">
             <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
             <p id="carModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">직책</label>
+            <div style="display:flex;gap:6px;margin-bottom:12px">
+              <select id="roleModalInput" style="flex:1">
+                <option value="">일반</option>
+                <option value="팀장">팀장</option>
+                <option value="부팀장">부팀장</option>
+              </select>
+              <button class="btn btn-sm btn-danger" onclick="clearRole()" title="직책 삭제">
+                <i class="fas fa-times"></i> 삭제
+              </button>
+            </div>
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">차량번호</label>
             <input type="text" id="carModalInput" placeholder="차량번호 입력" maxlength="10" style="margin-bottom:12px;text-transform:uppercase">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">연락처</label>
@@ -4468,10 +4485,13 @@ function loadTodayAdmin() {
     Object.keys(teamStats).forEach(team => {
       const s = teamStats[team];
       const checked = s.attend + s.late + s.absent;
-      const emps = data.employees.filter(e => e.active !== false && e.team === team).sort((a,b) => (a.order||0) - (b.order||0));
+      const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
+      const emps = data.employees
+        .filter(e => e.active !== false && e.team === team)
+        .sort((a,b) => (ROLE_ORDER[a.role||'']??2)-(ROLE_ORDER[b.role||'']??2) || (a.order||0)-(b.order||0));
 	      html += `<div class="seat-team-block">
 	        <div class="seat-team-title">
-	          <span><i class="fas fa-users" style="color:var(--primary);margin-right:4px"></i>${team}</span>
+	          <span><i class="fas fa-users" style="color:var(--primary);margin-right:4px"></i><span style="${(team==='대명장'||team==='명장')?'color:#c0392b;font-weight:800':''}">${team}</span></span>
 	          <div class="seat-team-badges">
 	            <span class="badge attend" style="font-size:10px">출석 ${s.attend}</span>
 	            <span class="badge late"   style="font-size:10px">지각 ${s.late}</span>
@@ -4485,18 +4505,21 @@ function loadTodayAdmin() {
 	        const status = rec ? rec.status : '미체크';
 	        const cls = STATUS_CLS[status] || 'nocheck';
 	        const icon = ICONS[status] || '⬜';
-	        html += `<div class="seat ${cls}" style="cursor:grab"
-	          title="${emp.name} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''} — 드래그하여 위치 변경"
-	          draggable="true"
-	          data-empid="${emp.id}"
-	          data-empname="${emp.name}"
-	          ondragstart="seatDragStart(event)"
-	          ondragover="seatDragOverItem(event)"
-	          ondragend="seatDragEnd(event)"
-	          onclick="highlightTodayRow('${emp.id}')">
-	          <span class="seat-icon">${icon}</span>
-	          <span class="seat-name">${emp.name}</span>
-	        </div>`;
+        const roleBorder = emp.role==='팀장' ? 'box-shadow:0 0 0 2px #856404 inset;' : emp.role==='부팀장' ? 'box-shadow:0 0 0 2px #1a73e8 inset;' : '';
+        const isSpecial = team==='대명장' || team==='명장';
+        const nameColor = isSpecial ? 'color:#c0392b;font-weight:800;' : '';
+        html += `<div class="seat ${cls}" style="cursor:grab;${roleBorder}"
+          title="${emp.name} · ${emp.team}${emp.role?' ('+emp.role+')':''} · ${status}${rec&&rec.reason?' ('+rec.reason+')':''}"
+          draggable="true"
+          data-empid="${emp.id}"
+          data-empname="${emp.name}"
+          ondragstart="seatDragStart(event)"
+          ondragover="seatDragOverItem(event)"
+          ondragend="seatDragEnd(event)"
+          onclick="highlightTodayRow('${emp.id}')">
+          <span class="seat-icon">${icon}</span>
+          <span class="seat-name">${emp.name}</span>
+        </div>`;
 	      });
       html += `</div></div>`;
     });
@@ -4533,14 +4556,35 @@ function loadTodayAdmin() {
 function renderEmployees() {
   const data = getData();
   const search = (document.getElementById('empSearch')?.value||'').toLowerCase();
-  const filtered = data.employees.filter(e=>!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)||(e.id||'').toLowerCase().includes(search));
+  const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
+
+  const filtered = data.employees
+    .filter(e=>!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)||(e.id||'').toLowerCase().includes(search))
+    .sort((a,b)=>{
+      // 1순위: 팀명 가나다
+      const teamCmp = (a.team||'').localeCompare(b.team||'','ko');
+      if (teamCmp !== 0) return teamCmp;
+      // 2순위: 같은 팀 안에서 팀장 → 부팀장 → 일반
+      return (ROLE_ORDER[a.role||'']??2) - (ROLE_ORDER[b.role||'']??2);
+    });
   const tbody = document.getElementById('empTable');
   tbody.innerHTML='';
   filtered.forEach(emp=>{
     const act=emp.active!==false, car=emp.car||'', phone=emp.phone||'';
+    const role=emp.role||'';
+    const roleDisplay = role==='팀장'
+      ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
+      : role==='부팀장'
+      ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      : `<span style="color:var(--text3);font-size:11px">-</span>`;
     const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     const phoneDisplay=phone?`<span style="font-size:12px">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
-    tbody.innerHTML+=`<tr><td>${emp.id}</td><td><strong>${emp.name}</strong></td><td>${emp.team}</td><td>${carDisplay}</td><td>${phoneDisplay}</td>
+    const isSpecialTeam = emp.team==='대명장' || emp.team==='명장';
+    const teamStyle = isSpecialTeam ? 'style="color:#c0392b;font-weight:800"' : '';
+    tbody.innerHTML+=`<tr>
+      <td>${emp.id}</td><td><strong>${emp.name}</strong></td><td><span ${teamStyle}>${emp.team}</span></td>
+      <td>${roleDisplay}</td>
+      <td>${carDisplay}</td><td>${phoneDisplay}</td>
       <td><span class="badge ${act?'active':'inactive'}">${act?'활성':'비활성'}</span></td>
       <td style="white-space:nowrap">
         ${act?`<button class="btn btn-sm btn-danger" onclick="toggleEmp('${emp.id}')"><i class="fas fa-ban"></i></button> `:`<button class="btn btn-sm btn-success" onclick="toggleEmp('${emp.id}')"><i class="fas fa-check"></i></button> `}
@@ -4550,7 +4594,7 @@ function renderEmployees() {
         <button class="btn btn-sm btn-danger" onclick="deleteEmp('${emp.id}')"><i class="fas fa-trash"></i></button>
       </td></tr>`;
   });
-  if (!filtered.length) tbody.innerHTML='<tr><td colspan="7" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+  if (!filtered.length) tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
 }
 
 function renderPublicEmpSearch() {
@@ -4569,38 +4613,55 @@ function renderPublicEmpSearch() {
     });
   }
 
+  const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
   const filtered = data.employees.filter(e => {
     if (e.active === false) return false;
-    const matchesSearch = !search || 
-      e.name.toLowerCase().includes(search) || 
-      (e.team || '').toLowerCase().includes(search) || 
-      (e.car || '').toLowerCase().includes(search) || 
+    const matchesSearch = !search ||
+      e.name.toLowerCase().includes(search) ||
+      (e.team || '').toLowerCase().includes(search) ||
+      (e.car || '').toLowerCase().includes(search) ||
       (e.phone || '').toLowerCase().includes(search);
     const matchesTeam = teamFilter === 'all' || e.team === teamFilter;
     return matchesSearch && matchesTeam;
+  }).sort((a,b) => {
+    // 팀별 그룹 → 팀 안에서 팀장/부팀장 우선
+    if (a.team !== b.team) return (a.team||'').localeCompare(b.team||'','ko');
+    return (ROLE_ORDER[a.role||'']??2) - (ROLE_ORDER[b.role||'']??2);
   });
 
   const tbody = document.getElementById('publicEmpTable');
   if(!tbody) return;
   tbody.innerHTML='';
   filtered.forEach(emp=>{
+    const role = emp.role||'';
+    const roleDisplay = role==='팀장'
+      ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
+      : role==='부팀장'
+      ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      : `<span style="color:var(--text3);font-size:11px">-</span>`;
+    const isSpecialPub = emp.team==='대명장' || emp.team==='명장';
+    const pubTeamStyle = isSpecialPub ? 'style="color:#c0392b;font-weight:800"' : '';
     tbody.innerHTML+=`<tr>
       <td><strong>${emp.name}</strong></td>
-      <td>${emp.team}</td>
+      <td><span ${pubTeamStyle}>${emp.team}</span></td>
+      <td>${roleDisplay}</td>
       <td style="color:var(--primary);font-weight:600">${emp.car||'-'}</td>
       <td>${emp.phone ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>` : '-'}</td>
     </tr>`;
   });
-  if (!filtered.length) tbody.innerHTML='<tr><td colspan="4" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+  if (!filtered.length) tbody.innerHTML='<tr><td colspan="5" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
 }
 
 async function addEmployee() {
-  const name=document.getElementById('newName').value.trim(), team=document.getElementById('newTeam').value.trim(), car=document.getElementById('newCar').value.trim(), phone=document.getElementById('newPhone').value.trim();
+  const name=document.getElementById('newName').value.trim(), team=document.getElementById('newTeam').value.trim();
+  const role=document.getElementById('newRole').value;
+  const car=document.getElementById('newCar').value.trim(), phone=document.getElementById('newPhone').value.trim();
   if (!name||!team){toast('이름과 팀명을 입력해주세요.');return;}
   const data=getData(), id=genId(data);
-  data.employees.push({id,name,team,token:'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),registered:getToday(),active:true,car,phone});
+  data.employees.push({id,name,team,role,token:'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),registered:getToday(),active:true,car,phone});
   await saveData(data);
-  document.getElementById('newName').value=''; document.getElementById('newTeam').value=''; document.getElementById('newCar').value=''; document.getElementById('newPhone').value='';
+  document.getElementById('newName').value=''; document.getElementById('newTeam').value='';
+  document.getElementById('newRole').value=''; document.getElementById('newCar').value=''; document.getElementById('newPhone').value='';
   renderEmployees(); loadTodayAdmin(); toast(`${name}님이 추가되었습니다. (ID: ${id})`);
 }
 async function toggleEmp(id) {
@@ -4636,12 +4697,18 @@ function openCarModal(id) {
   const emp=getData().employees.find(e=>e.id===id); if(!emp)return;
   carTargetId=id;
   document.getElementById('carModalName').textContent=`${emp.name} (${emp.team})`;
+  document.getElementById('roleModalInput').value=emp.role||'';
   document.getElementById('carModalInput').value=emp.car||'';
   document.getElementById('phoneModalInput').value=emp.phone||'';
   document.getElementById('carModal').style.display='flex';
   setTimeout(()=>document.getElementById('carModalInput').focus(),100);
 }
 function closeCarModal() { document.getElementById('carModal').style.display='none'; carTargetId=null; }
+
+function clearRole() {
+  document.getElementById('roleModalInput').value = '';
+  toast('직책이 "일반"으로 변경됩니다. 저장 버튼을 눌러 적용하세요.');
+}
 
 // ============================================================
 // 사유/상태 수정 모달
@@ -4698,11 +4765,12 @@ async function saveReasonModal() {
 }
 async function saveCarNumber() {
   if(!carTargetId)return;
+  const role=document.getElementById('roleModalInput').value;
   const car=document.getElementById('carModalInput').value.trim();
   const phone=document.getElementById('phoneModalInput').value.trim();
   const data=getData(); let empName='';
-  data.employees.forEach(e=>{if(e.id===carTargetId){e.car=car;e.phone=phone;empName=e.name;}});
-  await saveData(data); closeCarModal(); renderEmployees();
+  data.employees.forEach(e=>{if(e.id===carTargetId){e.role=role;e.car=car;e.phone=phone;empName=e.name;}});
+  await saveData(data); closeCarModal(); renderEmployees(); loadTodayAdmin();
   toast(`${empName}님의 정보가 수정되었습니다.`);
 }
 
@@ -5126,7 +5194,7 @@ function toast(msg) {
 // 전역 노출
 // ============================================================
 Object.assign(window,{
-  addEmployee,adminLogin,adminLogout,changeAdminPw,closeCarModal,closeEmpSelect,
+  addEmployee,adminLogin,adminLogout,changeAdminPw,clearRole,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
   deleteEmp,eduDragOver,eduDragLeave,eduDrop,removeFromEdu,
   exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
