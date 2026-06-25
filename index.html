@@ -137,9 +137,10 @@ tr:nth-child(even){background:#fafbfc}
 .report-summary .item.nocheck .n{color:var(--text3)}
 .report-summary .item.total .n{color:var(--primary)}
 .report-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}
-.report-table th{background:var(--primary);color:#fff;padding:5px 4px;font-size:9px}
-.report-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;font-size:9.5px}
+.report-table th{background:var(--primary);color:#fff;padding:5px 4px;font-size:9px;text-align:center}
+.report-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;font-size:9.5px;vertical-align:middle}
 .report-table tr:nth-child(even){background:#f8f9fa}
+.report-table td.td-left{text-align:left}
 .report-status{display:inline-block;padding:1px 8px;border-radius:8px;font-weight:600;font-size:9px}
 .report-status.attend{background:var(--success-bg);color:var(--success)}
 .report-status.late{background:var(--warning-bg);color:var(--warning)}
@@ -364,7 +365,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.22</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.24</span>
       </div>
     </div>
 
@@ -4583,6 +4584,10 @@ function renderEmployees() {
       ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
       : role==='부팀장'
       ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      : role==='대명장'
+      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
+      : role==='명장'
+      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
       : `<span style="color:var(--text3);font-size:11px">-</span>`;
     const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     const phoneDisplay=phone?`<span style="font-size:12px">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
@@ -4645,6 +4650,10 @@ function renderPublicEmpSearch() {
       ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
       : role==='부팀장'
       ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      : role==='대명장'
+      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
+      : role==='명장'
+      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
       : `<span style="color:var(--text3);font-size:11px">-</span>`;
     const isSpecialPub = emp.team==='대명장' || emp.team==='명장';
     const pubTeamStyle = isSpecialPub ? 'style="color:#c0392b;font-weight:800"' : '';
@@ -5011,7 +5020,7 @@ function renderReport() {
         const cls = status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
         html += `<tr>
           <td>${i+1}</td><td>${emp.id||edu.id}</td>
-          <td style="text-align:left;padding-left:6px;font-weight:700">${edu.name}</td>
+          <td class="td-left" style="font-weight:700">${edu.name}</td>
           <td><span style="font-size:9px;background:#8e44ad;color:#fff;padding:1px 5px;border-radius:4px">${edu.team}</span></td>
           <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
           <td>${emp.phone||'-'}</td>
@@ -5044,20 +5053,20 @@ function renderReport() {
             (recs[emp.id]||[]).filter(r=>r.status==='지각'||r.status==='결석').forEach(r=>{
               const cls=r.status==='지각'?'late':'absent';
               html+=`<tr><td>${no++}</td><td style="white-space:nowrap">${r.date}</td><td>${emp.id}</td>
-                <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td><td>${team}</td>
-                <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
+                <td class="td-left" style="font-weight:700">${emp.name}</td><td>${team}</td>
+                <td class="td-left" style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
                 <td><span class="report-status ${cls}">${r.status}</span></td>
-                <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+                <td class="td-left" style="font-size:8.5px;color:#666">${r.reason||'-'}</td></tr>`;
             });
           } else {
             const r=recs[emp.id];
             if(!r||(r.status!=='지각'&&r.status!=='결석')) return;
             const cls=r.status==='지각'?'late':'absent';
             html+=`<tr><td>${no++}</td><td>${emp.id}</td>
-              <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td><td>${team}</td>
+              <td style="font-weight:700">${emp.name}</td><td>${team}</td>
               <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
               <td><span class="report-status ${cls}">${r.status}</span></td>
-              <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+              <td style="font-size:8.5px;color:#666">${r.reason||'-'}</td></tr>`;
           }
         });
       });
@@ -5095,7 +5104,7 @@ function renderReport() {
         const empRecs = recs[emp.id] || [];
         if (!empRecs.length) {
           html+=`<tr><td>${no++}</td><td colspan="2" style="color:#9aa0a6">기록없음</td>
-            <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
+            <td style="font-weight:700">${emp.name}</td>
             <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
             <td>-</td><td><span class="report-status nocheck">-</span></td><td>-</td></tr>`;
         } else {
@@ -5105,11 +5114,11 @@ function renderReport() {
               <td>${i===0?no:''}${i===0&&empRecs.length>1?`<span style="font-size:9px;color:#9aa0a6"> (${empRecs.length}건)</span>`:''}</td>
               <td style="white-space:nowrap">${r.date}</td>
               <td>${i===0?emp.id:''}</td>
-              <td style="text-align:left;padding-left:6px;font-weight:${i===0?700:400}">${i===0?emp.name:''}</td>
-              <td style="color:#1a73e8;font-weight:600">${i===0?emp.car||'-':''}</td>
+              <td class="td-left" style="font-weight:${i===0?700:400}">${i===0?emp.name:''}</td>
+              <td class="td-left" style="color:#1a73e8;font-weight:600">${i===0?emp.car||'-':''}</td>
               <td>${r.time}</td>
               <td><span class="report-status ${cls}">${r.status}</span></td>
-              <td style="font-size:8.5px;color:#666;text-align:left">${r.reason||'-'}</td></tr>`;
+              <td class="td-left" style="font-size:8.5px;color:#666">${r.reason||'-'}</td></tr>`;
           });
           no++;
         }
@@ -5117,11 +5126,11 @@ function renderReport() {
         const r=recs[emp.id]; const status=r?r.status:'미체크';
         const cls=status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
         html+=`<tr><td>${no++}</td><td>${emp.id}</td>
-          <td style="text-align:left;padding-left:6px;font-weight:700">${emp.name}</td>
-          <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+          <td class="td-left" style="font-weight:700">${emp.name}</td>
+          <td class="td-left" style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
           <td>${r?r.time:'-'}</td>
           <td><span class="report-status ${cls}">${status}</span></td>
-          <td style="font-size:8.5px;color:#666;text-align:left">${r?r.reason||'-':'-'}</td></tr>`;
+          <td class="td-left" style="font-size:8.5px;color:#666">${r?r.reason||'-':'-'}</td></tr>`;
       }
     });
     html+=`</tbody></table></div>`;
