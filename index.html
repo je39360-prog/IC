@@ -373,7 +373,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.25</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.27</span>
       </div>
     </div>
 
@@ -4425,22 +4425,23 @@ function loadTodayAdmin() {
     teamStats[emp.team].total++;
     const r = todayRecords[emp.id];
     if(r){
-      rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
+      rows.push({id:emp.id,name:emp.name,team:emp.team,role:emp.role||'',car:emp.car||'',time:r.time,status:r.status,reason:r.reason});
       const k=r.status==='출석'?'attend':r.status==='지각'?'late':'absent';
       teamStats[emp.team][k]++;
       if(r.status==='출석')attend++; else if(r.status==='지각')late++; else absent++;
     } else {
-      rows.push({id:emp.id,name:emp.name,team:emp.team,car:emp.car||'',time:'-',status:'미체크',reason:''});
+      rows.push({id:emp.id,name:emp.name,team:emp.team,role:emp.role||'',car:emp.car||'',time:'-',status:'미체크',reason:''});
     }
   });
   const total = data.employees.filter(e=>e.active!==false).length;
   const nocheck = total - attend - late - absent;
 
-  // 직원 ID 기준으로 오름차순 정렬 (숫자형 ID 대응)
-  rows.sort((a, b) => {
-    const idA = parseInt(a.id) || 0;
-    const idB = parseInt(b.id) || 0;
-    return idA - idB || a.id.localeCompare(b.id);
+  // 팀별 → 팀 안에서 팀장/부팀장/대명장/명장 우선 정렬
+  const ROLE_ORDER_TODAY = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'':4};
+  rows.sort((a,b)=>{
+    const teamCmp = (a.team||'').localeCompare(b.team||'','ko');
+    if (teamCmp !== 0) return teamCmp;
+    return (ROLE_ORDER_TODAY[a.role]??4) - (ROLE_ORDER_TODAY[b.role]??4);
   });
 
   // 요약 카드
@@ -5053,8 +5054,8 @@ function renderReport() {
         <i class="fas fa-exclamation-triangle"></i> 지각 ${lateAll}건 · 결석 ${absentAll}건 — 총 ${issueCount}건
       </div>
       <table class="report-table">
-        <colgroup><col style="width:5%">${isPeriod?'<col style="width:11%">':''}<col style="width:9%"><col style="width:13%"><col style="width:10%"><col style="width:11%"><col style="width:9%"><col style="width:8%"><col></colgroup>
-        <colgroup><col style="width:22px"><col style="width:46px"><col style="width:56px"><col style="width:50px"><col style="width:60px"><col style="width:44px"><col style="width:38px"><col style="width:60px"></colgroup><colgroup><col style="width:22px"><col style="width:56px"><col style="width:50px"><col style="width:60px"><col style="width:44px"><col style="width:38px"><col style="width:60px"></colgroup><thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
       let no = 1;
       Object.keys(teams).forEach(team=>{
