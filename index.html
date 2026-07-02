@@ -136,6 +136,21 @@ tr:nth-child(even){background:#fafbfc}
 .report-summary .item.absent .n{color:var(--danger)}
 .report-summary .item.nocheck .n{color:var(--text3)}
 .report-summary .item.total .n{color:var(--primary)}
+/* 차량점검표 */
+.vc-section-title{font-size:12px;font-weight:700;color:var(--primary);margin:14px 0 8px;display:flex;align-items:center;gap:6px}
+.vc-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--border-light);border-radius:var(--radius);margin-bottom:8px}
+.vc-item-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.vc-item-text{flex:1;font-size:13px;line-height:1.4}
+.vc-item-result{display:flex;gap:5px;flex-shrink:0}
+.vc-result-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;cursor:pointer;font-size:14px;font-weight:700;color:var(--text2);transition:all .15s}
+.vc-result-btn.sel-good{background:#e6f4ea;border-color:#34a853;color:#1e7e34}
+.vc-result-btn.sel-bad{background:#fce8e6;border-color:#ea4335;color:#c5221f}
+.vc-result-btn.sel-na{background:#f1f3f4;border-color:#9aa0a6;color:#5f6368}
+.vc-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background .15s}
+.vc-card:hover{background:var(--border-light)}
+.vc-print-table{width:100%;border-collapse:collapse;font-size:9px}
+.vc-print-table th,.vc-print-table td{border:1px solid #333;padding:3px 4px;text-align:center}
+.vc-print-table .vc-label-col{text-align:left;font-size:9px}
 .report-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}
 .report-table th{background:var(--primary);color:#fff;padding:5px 4px;font-size:9px;text-align:center}
 .report-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;font-size:9.5px;vertical-align:middle}
@@ -303,6 +318,7 @@ tr:nth-child(even){background:#fafbfc}
 <nav class="nav" id="mainNav">
   <button class="nav-btn active" data-tab="checkin"><i class="fas fa-camera"></i> 출석체크</button>
   <button class="nav-btn" data-tab="empsearch"><i class="fas fa-search"></i> 직원조회</button>
+  <button class="nav-btn" data-tab="vehiclecheck"><i class="fas fa-truck-pickup"></i> 차량점검표</button>
   <button class="nav-btn" data-tab="admin"><i class="fas fa-cog"></i> 관리자</button>
   <button class="nav-btn" data-tab="report"><i class="fas fa-file-alt"></i> 보고서</button>
   <button class="nav-btn" data-tab="qrprint"><i class="fas fa-qrcode"></i> QR출력</button>
@@ -316,7 +332,7 @@ tr:nth-child(even){background:#fafbfc}
       <div style="flex:1;min-width:200px">
         <div class="search-wrap" style="margin-bottom:0">
           <i class="fas fa-search"></i>
-          <input type="text" id="publicEmpSearch" placeholder="이름, 차량, 연락처 검색" oninput="renderPublicEmpSearch()">
+          <input type="text" id="publicEmpSearch" placeholder="프로, 차량, 연락처 검색" oninput="renderPublicEmpSearch()">
         </div>
       </div>
       <div style="width:140px">
@@ -329,7 +345,7 @@ tr:nth-child(even){background:#fafbfc}
       <table>
         <thead>
           <tr>
-            <th>이름</th>
+            <th>프로</th>
             <th>팀명</th>
             <th>직책</th>
             <th>차량번호</th>
@@ -373,7 +389,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.27</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.29</span>
       </div>
     </div>
 
@@ -408,6 +424,104 @@ tr:nth-child(even){background:#fafbfc}
   </div>
 
   <p style="text-align:center;font-size:11px;color:var(--text3)"><i class="fas fa-info-circle"></i> 정상 출석: ~06:55 | 지각: 06:55~07:20 | 결석: 07:20~</p>
+</div>
+
+<!-- ============== 차량점검표 탭 ============== -->
+<div class="page" id="tab-vehiclecheck">
+  <div class="card" style="padding:14px 16px">
+    <div class="card-title" style="font-size:14px;margin-bottom:10px"><i class="fas fa-truck-pickup"></i> 운수종사자 일상점검표 입력</div>
+
+    <!-- 기본 정보 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div>
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">점검 연월</label>
+        <input type="month" id="vcYearMonth">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">점검일</label>
+        <input type="number" id="vcDay" min="1" max="31" placeholder="일 (1~31)" onchange="vcOnDayChange()">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">운송사업자명</label>
+        <input type="text" id="vcCompany" placeholder="이천물류">
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">차량번호</label>
+        <input type="text" id="vcCarNumber" placeholder="예: 12가3456">
+      </div>
+      <div style="grid-column:1/-1;position:relative">
+        <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">운수종사자명</label>
+        <input type="text" id="vcEmpName" placeholder="프로 입력 (직원 검색)" oninput="vcSearchEmp()" autocomplete="off">
+        <div id="vcEmpSuggest" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:50;max-height:200px;overflow-y:auto;display:none"></div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+
+    <!-- 점검 항목 1~11 -->
+    <div id="vcItemList"></div>
+
+    <div id="vcSignSection" style="margin-top:16px;border-top:1.5px dashed var(--border);padding-top:16px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--primary)"><i class="fas fa-pen-nib"></i> 점검자 확인(서명)</div>
+      <div style="background:var(--border-light);border-radius:var(--radius);padding:10px;text-align:center">
+        <canvas id="vcSignCanvas" width="300" height="120" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
+        <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
+          <button class="btn btn-sm btn-s" onclick="vcClearSign()"><i class="fas fa-eraser"></i> 지우기</button>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border:none;border-top:1px solid var(--border);margin:14px 0">
+
+    <div>
+      <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">불량상태 조치 기록</label>
+      <textarea id="vcRemark" placeholder="불량 발견 시 조치 내용을 입력해주세요" style="height:64px"></textarea>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
+      <button class="btn btn-p" style="flex:1.5;min-width:80px" onclick="vcSave()"><i class="fas fa-save"></i> 저장</button>
+      <button class="btn btn-s" style="flex:1;min-width:80px" onclick="vcPrint()"><i class="fas fa-print"></i> 인쇄</button>
+      <button class="btn btn-s" style="flex:1;min-width:80px" onclick="vcResetForm()"><i class="fas fa-file"></i> 새 점검표</button>
+    </div>
+
+    <!-- 보내기 메뉴 모달 -->
+    <div id="vcSendModal" class="modal-overlay hide" style="z-index:200">
+      <div class="modal-content" style="max-width:300px;text-align:center">
+        <div class="modal-title">점검표 보내기</div>
+        <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px">
+          <button class="btn btn-p" onclick="vcExportPDF()"><i class="fas fa-file-pdf"></i> PDF로 저장</button>
+          <button class="btn btn-s" onclick="vcSendEmail()"><i class="fas fa-envelope"></i> 이메일 보내기</button>
+          <button class="btn btn-s" onclick="closeModal('vcSendModal')" style="margin-top:10px;background:#eee;color:#333">취소</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 저장된 점검표 목록 -->
+  <div class="card" style="padding:14px 16px">
+    <div class="card-title" style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <span><i class="fas fa-folder-open"></i> 저장된 점검표</span>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" id="vcListSearch" placeholder="프로/차량번호 검색" style="width:140px;font-size:12px;padding:5px 8px" oninput="vcRenderList()">
+        <button id="vcAdminBtn" class="btn btn-sm btn-s" onclick="vcToggleAdminAuth()" title="관리자 인증 (수정/삭제)">
+          <i class="fas fa-lock"></i> 관리자
+        </button>
+      </div>
+    </div>
+
+    <!-- 관리자 인증 패널 (토글) -->
+    <div id="vcAdminAuthPanel" class="hide" style="display:flex;gap:6px;margin-bottom:12px;background:var(--border-light);padding:10px;border-radius:var(--radius);align-items:center">
+      <i class="fas fa-shield-alt" style="color:var(--primary);flex-shrink:0"></i>
+      <input type="password" id="vcListPw" placeholder="관리자 비밀번호 입력" maxlength="10" style="flex:1" onkeypress="if(event.key==='Enter')vcUnlockList()">
+      <button class="btn btn-sm btn-p" onclick="vcUnlockList()"><i class="fas fa-unlock"></i> 인증</button>
+      <button class="btn btn-sm btn-danger" onclick="vcLockList()"><i class="fas fa-lock"></i></button>
+    </div>
+
+    <div id="vcList"></div>
+  </div>
+
+  <!-- 인쇄용 양식 (화면에는 숨김) -->
+  <div id="vcPrintArea" style="display:none"></div>
 </div>
 
 <!-- ============== 관리자 탭 ============== -->
@@ -465,7 +579,7 @@ tr:nth-child(even){background:#fafbfc}
         </div>
 
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-list"></i> 개인별 현황</div>
-        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th><th>수정</th></tr></thead><tbody id="todayTable"></tbody></table></div>
+        <div class="table-wrap"><table><thead><tr><th>직원ID</th><th>프로</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th><th>수정</th></tr></thead><tbody id="todayTable"></tbody></table></div>
 
         <!-- 사유 수정 모달 -->
         <div id="reasonModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
@@ -493,7 +607,7 @@ tr:nth-child(even){background:#fafbfc}
         <div style="margin-bottom:12px">
           <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-user-plus"></i> 직원 추가</div>
           <div class="add-form">
-            <input type="text" id="newName" placeholder="이름">
+            <input type="text" id="newName" placeholder="프로">
             <input type="text" id="newTeam" placeholder="팀명">
             <select id="newRole" style="flex:1;min-width:100px">
               <option value="">일반</option>
@@ -501,6 +615,7 @@ tr:nth-child(even){background:#fafbfc}
               <option value="부팀장">부팀장</option>
               <option value="대명장">대명장</option>
               <option value="명장">명장</option>
+              <option value="프로">프로</option>
             </select>
             <input type="text" id="newCar" placeholder="차량번호" maxlength="10" style="text-transform:uppercase">
             <input type="text" id="newPhone" placeholder="연락처 (예: 010-1234-5678)">
@@ -508,15 +623,15 @@ tr:nth-child(even){background:#fafbfc}
           </div>
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
-        <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="이름 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
-        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>이름</th><th>팀명</th><th>직책</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+        <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="프로 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>프로</th><th>팀명</th><th>직책</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
 
         <!-- 직원 정보 수정 모달 -->
         <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
           <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto">
             <h3 style="font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
-            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">이름</label>
-            <input type="text" id="empNameInput" placeholder="이름 입력" maxlength="20" style="margin-bottom:12px">
+            <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">프로</label>
+            <input type="text" id="empNameInput" placeholder="프로 입력" maxlength="20" style="margin-bottom:12px">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">팀명</label>
             <input type="text" id="empTeamInput" placeholder="팀명 입력" maxlength="20" style="margin-bottom:12px">
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">직책</label>
@@ -527,6 +642,7 @@ tr:nth-child(even){background:#fafbfc}
                 <option value="부팀장">부팀장</option>
                 <option value="대명장">대명장</option>
                 <option value="명장">명장</option>
+                <option value="프로">프로</option>
               </select>
               <button class="btn btn-sm btn-danger" onclick="clearRole()" title="직책 삭제">
                 <i class="fas fa-times"></i> 삭제
@@ -686,7 +802,7 @@ tr:nth-child(even){background:#fafbfc}
         <span style="font-size:13px;color:var(--success);font-weight:600">이 QR은 오늘 하루만 유효합니다</span>
       </div>
 
-      <p style="font-size:12px;color:var(--text2)">직원이 이 QR을 스캔하면 이름 선택 후 출석이 처리됩니다.</p>
+      <p style="font-size:12px;color:var(--text2)">직원이 이 QR을 스캔하면 프로 선택 후 출석이 처리됩니다.</p>
     </div>
   </div>
 </div>
@@ -3680,6 +3796,18 @@ document.addEventListener('DOMContentLoaded', () => {
       if (this.dataset.tab === 'report') renderReport();
       if (this.dataset.tab === 'qrprint') renderQRGrid();
       if (this.dataset.tab === 'empsearch') renderPublicEmpSearch();
+      if (this.dataset.tab === 'vehiclecheck') {
+        vcListUnlocked = false;
+        // 잠금 아이콘 버튼 원복
+        const adminBtn = document.getElementById('vcAdminBtn');
+        if (adminBtn) adminBtn.innerHTML = '<i class="fas fa-lock"></i>';
+        const authArea = document.getElementById('vcAdminAuth');
+        if (authArea) authArea.classList.add('hide');
+        const pwInput = document.getElementById('vcListPw');
+        if (pwInput) pwInput.value = '';
+        vcInit();
+        vcRenderList(); // 목록은 항상 표시
+      }
     });
   });
   document.getElementById('manualToken').addEventListener('keypress', e => { if(e.key==='Enter') manualCheckin(); });
@@ -3944,7 +4072,7 @@ function showEmpSelect() {
     }
     clearMyEmp();
   }
-  // 저장된 정보 없으면 → 이름 직접 입력으로 본인 확인
+  // 저장된 정보 없으면 → 프로 직접 입력으로 본인 확인
   showFirstTimeInput();
 }
 
@@ -4017,7 +4145,7 @@ function showSavedEmpConfirm(emp) {
 function confirmSavedEmp() { if(window._savedEmp){selectEmpForCheckin(window._savedEmp);window._savedEmp=null;} }
 function changeSavedEmp()  { clearMyEmp();window._savedEmp=null;showFirstTimeInput(); }
 
-// 최초 등록: 이름 입력으로 본인 찾기
+// 최초 등록: 프로 입력으로 본인 찾기
 function showFirstTimeInput() {
   const grid = document.getElementById('empSelectGrid');
   if (!grid) return;
@@ -4025,10 +4153,10 @@ function showFirstTimeInput() {
     <div style="text-align:center;padding:8px 0 14px">
       <i class="fas fa-user-plus" style="color:var(--primary);font-size:28px;display:block;margin-bottom:10px"></i>
       <div style="font-size:15px;font-weight:700;margin-bottom:4px">처음 사용하시는군요!</div>
-      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">본인 이름을 입력해 주세요</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:16px">본인 프로명을 입력해 주세요</div>
       <div style="position:relative;margin-bottom:12px">
         <i class="fas fa-search" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px"></i>
-        <input type="text" id="firstTimeNameInput" placeholder="이름 입력 (예: 홍길동)"
+        <input type="text" id="firstTimeNameInput" placeholder="프로명 입력 (예: 홍길동)"
           style="padding-left:38px;font-size:15px;text-align:left"
           oninput="renderFirstTimeResults()" autocomplete="off">
       </div>
@@ -4502,7 +4630,7 @@ function loadTodayAdmin() {
     Object.keys(teamStats).forEach(team => {
       const s = teamStats[team];
       const checked = s.attend + s.late + s.absent;
-      const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
+      const ROLE_ORDER = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'프로':4,'':5};
       const emps = data.employees
         .filter(e => e.active !== false && e.team === team)
         .sort((a,b) => (ROLE_ORDER[a.role||'']??2)-(ROLE_ORDER[b.role||'']??2) || (a.order||0)-(b.order||0));
@@ -4573,7 +4701,7 @@ function loadTodayAdmin() {
 function renderEmployees() {
   const data = getData();
   const search = (document.getElementById('empSearch')?.value||'').toLowerCase();
-  const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
+  const ROLE_ORDER = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'프로':4,'':5};
 
   const filtered = data.employees
     .filter(e=>!search||e.name.toLowerCase().includes(search)||(e.team||'').toLowerCase().includes(search)||(e.id||'').toLowerCase().includes(search))
@@ -4597,6 +4725,8 @@ function renderEmployees() {
       ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
       : role==='명장'
       ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
+      : role==='프로'
+      ? `<span style="font-size:11px;background:#e6f4ea;color:#1e7e34;padding:2px 8px;border-radius:8px;font-weight:700">프로</span>`
       : `<span style="color:var(--text3);font-size:11px">-</span>`;
     const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     const phoneDisplay=phone?`<span style="font-size:12px">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
@@ -4634,7 +4764,7 @@ function renderPublicEmpSearch() {
     });
   }
 
-  const ROLE_ORDER = {'팀장':0,'부팀장':1,'':2};
+  const ROLE_ORDER = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'프로':4,'':5};
   const filtered = data.employees.filter(e => {
     if (e.active === false) return false;
     const matchesSearch = !search ||
@@ -4663,6 +4793,8 @@ function renderPublicEmpSearch() {
       ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
       : role==='명장'
       ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
+      : role==='프로'
+      ? `<span style="font-size:11px;background:#e6f4ea;color:#1e7e34;padding:2px 8px;border-radius:8px;font-weight:700">프로</span>`
       : `<span style="color:var(--text3);font-size:11px">-</span>`;
     const isSpecialPub = emp.team==='대명장' || emp.team==='명장';
     const pubTeamStyle = isSpecialPub ? 'style="color:#c0392b;font-weight:800"' : '';
@@ -4681,7 +4813,7 @@ async function addEmployee() {
   const name=document.getElementById('newName').value.trim(), team=document.getElementById('newTeam').value.trim();
   const role=document.getElementById('newRole').value;
   const car=document.getElementById('newCar').value.trim(), phone=document.getElementById('newPhone').value.trim();
-  if (!name||!team){toast('이름과 팀명을 입력해주세요.');return;}
+  if (!name||!team){toast('프로와 팀명을 입력해주세요.');return;}
   const data=getData(), id=genId(data);
   data.employees.push({id,name,team,role,token:'tok_'+Date.now()+'_'+Math.random().toString(36).slice(2,8),registered:getToday(),active:true,car,phone});
   await saveData(data);
@@ -4709,7 +4841,7 @@ async function deleteEmp(id) {
 
 let carTargetId=null;
 async function resetEmpAuth(empId, empName) {
-  if (!confirm(`${empName}님의 본인 인증을 초기화하시겠습니까?\n\n다음 QR 스캔 시 다시 이름을 입력하여 본인 확인을 해야 합니다.`)) return;
+  if (!confirm(`${empName}님의 본인 인증을 초기화하시겠습니까?\n\n다음 QR 스캔 시 다시 프로명을 입력하여 본인 확인을 해야 합니다.`)) return;
   const data = getData();
   const emp = data.employees.find(e => e.id === empId);
   if (!emp) return;
@@ -4796,7 +4928,7 @@ async function saveCarNumber() {
   const role=document.getElementById('roleModalInput').value;
   const car=document.getElementById('carModalInput').value.trim();
   const phone=document.getElementById('phoneModalInput').value.trim();
-  if(!name||!team){toast('이름과 팀명은 필수입니다.');return;}
+  if(!name||!team){toast('프로와 팀명은 필수입니다.');return;}
   const data=getData(); let empName='';
   data.employees.forEach(e=>{
     if(e.id===carTargetId){
@@ -4804,7 +4936,7 @@ async function saveCarNumber() {
       empName=name;
     }
   });
-  // 오늘 출석 기록의 이름/팀명도 동기화
+  // 오늘 출석 기록의 프로/팀명도 동기화
   const today=getToday();
   data.records.forEach(r=>{
     if(r.empId===carTargetId&&r.date===today){r.name=name;r.team=team;}
@@ -4887,7 +5019,7 @@ function loadStats() {
   if(!sumDiv) return;
   let html=`<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
     <thead><tr style="background:var(--border-light)">
-      <th style="padding:8px;text-align:left">이름</th><th style="padding:8px">팀명</th>
+      <th style="padding:8px;text-align:left">프로</th><th style="padding:8px">팀명</th>
       <th style="padding:8px;color:#34a853">출석</th><th style="padding:8px;color:#fbbc04">지각</th>
       <th style="padding:8px;color:#ea4335">결석</th><th style="padding:8px">합계</th><th style="padding:8px">출석률</th>
     </tr></thead><tbody>`;
@@ -5021,7 +5153,7 @@ function renderReport() {
       </div>
       <table class="report-table">
         ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
       eduList.forEach((edu, i) => {
         const emp = data.employees.find(e => e.id === edu.id) || edu;
@@ -5055,7 +5187,7 @@ function renderReport() {
       </div>
       <table class="report-table">
         ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
       let no = 1;
       Object.keys(teams).forEach(team=>{
@@ -5109,7 +5241,7 @@ function renderReport() {
       </div>
       <table class="report-table" style="margin-bottom:0;border-radius:0 0 6px 6px;overflow:hidden">
         <colgroup><col style="width:5%">${isPeriod?'<col style="width:12%">':''}<col style="width:10%"><col style="width:17%"><col style="width:13%"><col style="width:9%"><col style="width:9%"><col></colgroup>
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>이름</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
+        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
     emps.forEach(emp=>{
       if (isPeriod) {
@@ -5221,7 +5353,7 @@ async function printDailyQR() {
 // ============================================================
 function exportCSV() {
   const data=getData();
-  let csv='\uFEFF날짜,직원ID,이름,팀명,시간,상태,사유\n';
+  let csv='\uFEFF날짜,직원ID,프로,팀명,시간,상태,사유\n';
   data.records.forEach(r=>{ csv+=`${r.date},${r.empId},${r.name},${r.team},${r.time},${r.status},${r.reason||''}\n`; });
   const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
   a.download='출석기록_'+getToday()+'.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
@@ -5240,6 +5372,526 @@ function toast(msg) {
 // ============================================================
 // 전역 노출
 // ============================================================
+// ============================================================
+// 차량점검표 (운수종사자 일상점검표)
+// ============================================================
+const VC_ITEMS = [
+  { no:1, group:'외관점검', text:'번호판, 전면유리, 후사경 등의 청결상태' },
+  { no:2, group:'외관점검', text:'후미등, 차폭등 등 등화장치 작동상태' },
+  { no:3, group:'외관점검', text:'창닦이기 작동상태' },
+  { no:4, group:'외관점검', text:'적재함(보조지지대 포함), 측면 보호대, 후부반사판, 트레일러 연결장치의 부착상태 및 훼손 여부' },
+  { no:5, group:'상태점검', text:'타이어 손상 및 마모(1.6mm 이상) 여부' },
+  { no:6, group:'상태점검', text:'화물, 적재함 지지대(판스프링) 등의 고정상태' },
+  { no:7, group:'상태점검', text:'바퀴 너트 등 균열 여부' },
+  { no:8, group:'기타', text:'냉각수, 공기압, 엔진오일 등 차량이상 여부(계기판 확인)' },
+  { no:9, group:'기타', text:'좌석안전띠 상태' },
+  { no:10, group:'기타', text:'소화기 비치 여부' },
+  { no:11, group:'기타', text:'안전삼각대 등 비치 여부' },
+  { no:12, group:'확인', text:'점검자 확인(서명)' }
+];
+let vcResults = {}; // { 1: 'O'|'X'|'미', ... }
+let vcEditId = null; // 수정 중인 점검표 id (없으면 신규)
+
+let vcListUnlocked = false;
+
+function vcToggleAdminAuth() {
+  if (vcListUnlocked) {
+    vcLockList();
+  } else {
+    const panel = document.getElementById('vcAdminAuthPanel');
+    if (panel.classList.contains('hide')) {
+      panel.classList.remove('hide');
+      setTimeout(()=>document.getElementById('vcListPw')?.focus(), 50);
+    } else {
+      panel.classList.add('hide');
+    }
+  }
+}
+
+function vcLockList() {
+  vcListUnlocked = false;
+  document.getElementById('vcAdminAuthPanel').classList.add('hide');
+  document.getElementById('vcAdminBtn').innerHTML = '<i class="fas fa-lock"></i> 관리자';
+  document.getElementById('vcAdminBtn').className = 'btn btn-sm btn-s';
+  vcRenderList();
+  toast('관리자 모드가 해제되었습니다.');
+}
+
+function vcUnlockList() {
+  const pw = document.getElementById('vcListPw').value;
+  const data = getData();
+  const stored = data.settings?.adminPw || localStorage.getItem('attendance_admin_pw') || '0743';
+  if (pw === stored) {
+    vcListUnlocked = true;
+    document.getElementById('vcAdminAuthPanel').classList.add('hide');
+    document.getElementById('vcListPw').value = '';
+    document.getElementById('vcAdminBtn').innerHTML = '<i class="fas fa-unlock"></i> 관리자 모드';
+    document.getElementById('vcAdminBtn').className = 'btn btn-sm btn-p';
+    vcRenderList();
+    toast('관리자 모드가 활성화되었습니다. 수정·삭제가 가능합니다.');
+  } else {
+    toast('비밀번호가 틀렸습니다.');
+    document.getElementById('vcListPw').value = '';
+  }
+}
+
+function vcInit() {
+  if (!document.getElementById('vcYearMonth').value) {
+    const d = new Date();
+    document.getElementById('vcYearMonth').value = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    document.getElementById('vcDay').value = d.getDate();
+  }
+  vcRenderItems();
+}
+
+function vcRenderItems() {
+  const wrap = document.getElementById('vcItemList');
+  if (!wrap) return;
+  let html = '', lastGroup = null;
+  VC_ITEMS.forEach(item => {
+    if (item.group !== lastGroup) {
+      if (item.group === '확인') return; // 서명란은 별도 캔버스로 처리
+      html += `<div class="vc-section-title"><i class="fas fa-clipboard-list"></i> ${item.group}</div>`;
+      lastGroup = item.group;
+    }
+    const sel = vcResults[item.no] || '';
+    html += `<div class="vc-item">
+      <div class="vc-item-num">${item.no}</div>
+      <div class="vc-item-text">${item.text}</div>
+      <div class="vc-item-result">
+        <button type="button" class="vc-result-btn ${sel==='O'?'sel-good':''}" onclick="vcSetResult(${item.no},'O')" title="양호">O</button>
+        <button type="button" class="vc-result-btn ${sel==='X'?'sel-bad':''}" onclick="vcSetResult(${item.no},'X')" title="불량">X</button>
+        <button type="button" class="vc-result-btn ${sel==='미'?'sel-na':''}" onclick="vcSetResult(${item.no},'미')" title="미운행">미</button>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+  vcInitSignCanvas();
+}
+
+let vcCanvas = null, vcCtx = null, vcIsDrawing = false;
+function vcInitSignCanvas() {
+  if (vcCanvas) return;
+  vcCanvas = document.getElementById('vcSignCanvas');
+  if (!vcCanvas) return;
+  vcCtx = vcCanvas.getContext('2d');
+  vcCtx.lineWidth = 2.5;
+  vcCtx.lineCap = 'round';
+  vcCtx.strokeStyle = '#000';
+
+  const getPos = (e) => {
+    const rect = vcCanvas.getBoundingClientRect();
+    const scaleX = vcCanvas.width / rect.width;
+    const scaleY = vcCanvas.height / rect.height;
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  };
+
+  const start = (e) => { vcIsDrawing = true; const pos = getPos(e); vcCtx.beginPath(); vcCtx.moveTo(pos.x, pos.y); };
+  const move = (e) => { if (!vcIsDrawing) return; e.preventDefault(); const pos = getPos(e); vcCtx.lineTo(pos.x, pos.y); vcCtx.stroke(); };
+  const end = () => { vcIsDrawing = false; };
+
+  vcCanvas.addEventListener('mousedown', start);
+  vcCanvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  vcCanvas.addEventListener('touchstart', start, {passive:false});
+  vcCanvas.addEventListener('touchmove', move, {passive:false});
+  vcCanvas.addEventListener('touchend', end);
+}
+
+function vcClearSign() {
+  if (!vcCtx || !vcCanvas) return;
+  vcCtx.clearRect(0, 0, vcCanvas.width, vcCanvas.height);
+}
+
+function vcGetSignData() {
+  if (!vcCanvas || !vcCtx) return null;
+  const pix = vcCtx.getImageData(0, 0, vcCanvas.width, vcCanvas.height).data;
+  for (let i = 0; i < pix.length; i += 4) { if (pix[i+3] > 0) return vcCanvas.toDataURL(); }
+  return null;
+}
+
+function vcLoadSign(dataUrl) {
+  if (!vcCtx || !vcCanvas) return;
+  vcClearSign();
+  if (!dataUrl) return;
+  const img = new Image();
+  img.onload = () => { vcCtx.drawImage(img, 0, 0); };
+  img.src = dataUrl;
+}
+
+let vcTargetRecordId = null;
+function openModal(id) {
+  const m = document.getElementById(id);
+  if (m) {
+    m.classList.remove('hide');
+    m.style.display = 'flex';
+  }
+}
+
+function closeModal(id) {
+  const m = document.getElementById(id);
+  if (m) {
+    m.classList.add('hide');
+    m.style.display = 'none';
+  }
+}
+
+function vcSendRecord(id) {
+  vcTargetRecordId = id;
+  openModal('vcSendModal');
+}
+
+function vcExportPDF() {
+  closeModal('vcSendModal');
+  if (!vcTargetRecordId) return;
+  toast('인쇄 창에서 "PDF로 저장"을 선택해주세요.');
+  setTimeout(() => vcPrintRecord(vcTargetRecordId), 500);
+}
+
+function vcSendEmail() {
+  closeModal('vcSendModal');
+  if (!vcTargetRecordId) return;
+  const data = getData();
+  const v = (data.vehicleChecks||[]).find(x => x.id === vcTargetRecordId);
+  if (!v) return;
+  const subject = encodeURIComponent(`[차량점검표] ${v.yearMonth} ${v.empName} (${v.carNumber||''})`);
+  const body = encodeURIComponent(`안녕하세요.\n\n${v.yearMonth} ${v.empName} 프로님의 차량(${v.carNumber||''}) 일상점검표입니다.\n상세 내용은 시스템에서 확인하시거나 첨부된 PDF를 확인해 주세요.\n\n감사합니다.`);
+  
+  window.location.href = `mailto:?subject=${subject}&body=${body}`;
+}
+
+function vcSetResult(no, val) {
+  vcResults[no] = (vcResults[no] === val) ? '' : val; // 다시 누르면 취소
+  vcRenderItems();
+}
+
+function vcSearchEmp() {
+  const search = document.getElementById('vcEmpName').value.trim();
+  const box = document.getElementById('vcEmpSuggest');
+  if (!search) { box.style.display = 'none'; return; }
+  const data = getData();
+  const matched = data.employees.filter(e => e.active!==false && e.name.includes(search)).slice(0, 8);
+  if (!matched.length) { box.style.display = 'none'; return; }
+  box.innerHTML = matched.map(e => `<div onclick="vcPickEmp('${e.id}')" style="padding:10px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border)" onmouseover="this.style.background='var(--border-light)'" onmouseout="this.style.background='#fff'"><strong>${e.name}</strong> <span style="color:var(--text2);font-size:11px">· ${e.team}${e.car?' · '+e.car:''}</span></div>`).join('');
+  box.style.display = 'block';
+}
+
+function vcPickEmp(empId) {
+  const emp = getData().employees.find(e => e.id === empId);
+  if (!emp) return;
+  document.getElementById('vcEmpName').value = emp.name;
+  if (emp.car) document.getElementById('vcCarNumber').value = emp.car;
+  document.getElementById('vcEmpSuggest').style.display = 'none';
+}
+
+document.addEventListener('click', function(e) {
+  const box = document.getElementById('vcEmpSuggest');
+  const input = document.getElementById('vcEmpName');
+  if (box && input && !box.contains(e.target) && e.target !== input) box.style.display = 'none';
+});
+
+// 날짜를 바꾸면 같은 직원·같은 월의 해당 날짜 기존 입력값을 자동으로 불러옴
+function vcOnDayChange() {
+  if (!vcEditId) return;
+  const day = document.getElementById('vcDay').value;
+  if (!day) return;
+  const data = getData();
+  const v = (data.vehicleChecks||[]).find(x => x.id === vcEditId);
+  if (!v) return;
+  vcResults = { ...((v.dayResults||{})[day] || {}) };
+  document.getElementById('vcRemark').value = (v.dayRemarks||{})[day] || '';
+  vcRenderItems();
+  vcLoadSign((v.daySigns||{})[day]);
+}
+
+function vcGetFormData() {
+  return {
+    yearMonth: document.getElementById('vcYearMonth').value,
+    day: document.getElementById('vcDay').value,
+    company: document.getElementById('vcCompany').value.trim(),
+    carNumber: document.getElementById('vcCarNumber').value.trim(),
+    empName: document.getElementById('vcEmpName').value.trim(),
+    results: { ...vcResults },
+    remark: document.getElementById('vcRemark').value.trim()
+  };
+}
+
+// 같은 직원 + 같은 연월의 점검표를 찾음 (없으면 null)
+function vcFindRecord(data, empName, yearMonth) {
+  return (data.vehicleChecks||[]).find(v => v.empName === empName && v.yearMonth === yearMonth);
+}
+
+async function vcSave() {
+  const form = vcGetFormData();
+  if (!form.empName) { toast('운수종사자명을 입력해주세요.'); return; }
+  if (!form.yearMonth || !form.day) { toast('점검 연월과 날짜를 입력해주세요.'); return; }
+
+  const data = getData();
+  if (!Array.isArray(data.vehicleChecks)) data.vehicleChecks = [];
+
+  // 같은 직원 + 같은 월의 기존 점검표 찾기 (없으면 새로 생성)
+  let record = vcFindRecord(data, form.empName, form.yearMonth);
+  if (!record) {
+    record = {
+      id: 'vc_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+      yearMonth: form.yearMonth,
+      company: form.company,
+      carNumber: form.carNumber,
+      empName: form.empName,
+      dayResults: {},   // { "5": {1:'O',2:'X',...}, "12": {...} }
+      dayRemarks: {},   // { "5": "조치내용", ... }
+      savedAt: new Date().toISOString()
+    };
+    data.vehicleChecks.push(record);
+  }
+
+  // 최신 정보로 업데이트
+  record.company = form.company || record.company;
+  record.carNumber = form.carNumber || record.carNumber;
+  record.dayResults[form.day] = form.results;
+  if (form.remark) record.dayRemarks[form.day] = form.remark;
+  
+  // 서명 저장 (해당 날짜별로 저장)
+  if (!record.daySigns) record.daySigns = {};
+  const signData = vcGetSignData();
+  if (signData) record.daySigns[form.day] = signData;
+
+  record.savedAt = new Date().toISOString();
+
+  await saveData(data);
+  vcEditId = record.id;
+  vcRenderList();
+  toast(`${form.empName}님의 ${form.day}일 점검 결과가 저장되었습니다. (이 달 누적: ${Object.keys(record.dayResults).length}일)`);
+}
+
+function vcResetForm() {
+  vcEditId = null;
+  vcResults = {};
+  document.getElementById('vcEmpName').value = '';
+  document.getElementById('vcCarNumber').value = '';
+  document.getElementById('vcRemark').value = '';
+  vcRenderItems();
+}
+
+function vcRenderList() {
+  const wrap = document.getElementById('vcList');
+  if (!wrap) return;
+
+  const search = (document.getElementById('vcListSearch')?.value || '').toLowerCase();
+  const data = getData();
+  const list = (Array.isArray(data.vehicleChecks) ? data.vehicleChecks : [])
+    .filter(v => !search || v.empName.toLowerCase().includes(search) || (v.carNumber||'').toLowerCase().includes(search))
+    .sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
+
+  if (!list.length) {
+    wrap.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fas fa-clipboard"></i><p>저장된 점검표가 없습니다</p></div>`;
+    return;
+  }
+
+    wrap.innerHTML = list.map(v => {
+    const dayResults = v.dayResults || {};
+    const days = Object.keys(dayResults).sort((a,b)=>(+a)-(+b));
+    const badCount = days.reduce((sum,d)=> sum + Object.values(dayResults[d]||{}).filter(r=>r==='X').length, 0);
+    
+    // 관리자 버튼 구성 (인증 시에만 노출)
+    let adminBtns = '';
+    if (vcListUnlocked) {
+      adminBtns = `
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();vcDelete('${v.id}')" title="삭제">
+          <i class="fas fa-trash"></i>
+        </button>
+        <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcLoad('${v.id}')" title="수정">
+          <i class="fas fa-edit"></i>
+        </button>`;
+    }
+
+    return `<div class="vc-card" onclick="vcPrintRecord('${v.id}')" title="클릭하여 인쇄">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="font-size:14px">${v.empName}</strong>
+          <span style="font-size:12px;color:var(--text2);margin-left:6px">${v.carNumber||'-'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${badCount > 0 ? `<span style="font-size:10px;background:#fce8e6;color:#c5221f;padding:2px 7px;border-radius:8px;font-weight:700">불량 ${badCount}</span>` : `<span style="font-size:10px;background:#e6f4ea;color:#1e7e34;padding:2px 7px;border-radius:8px;font-weight:700">양호</span>`}
+          <button class="btn btn-sm btn-p" onclick="event.stopPropagation();vcPrintRecord('${v.id}')" title="인쇄"><i class="fas fa-print"></i></button>
+          <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcSendRecord('${v.id}')" title="보내기"><i class="fas fa-share-square"></i></button>
+          ${adminBtns}
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'}) · ${v.company||''}</div>
+    </div>`;
+  }).join('');
+}
+
+// 목록에서 특정 점검표를 바로 인쇄 (직원 누구나 가능, 수정/저장 없음)
+function vcPrintRecord(id) {
+  const data = getData();
+  const v = (data.vehicleChecks||[]).find(x => x.id === id);
+  if (!v) return;
+  vcRenderPrintDoc(v.empName, v.yearMonth, v.company, v.carNumber, v.dayResults||{}, v.dayRemarks||{}, v.daySigns||{});
+}
+
+function vcLoad(id) {
+  if (!vcListUnlocked) { toast('관리자 인증 후 이용 가능합니다.'); return; }
+  const data = getData();
+  const v = (data.vehicleChecks||[]).find(x => x.id === id);
+  if (!v) return;
+  vcEditId = v.id;
+  document.getElementById('vcYearMonth').value = v.yearMonth || '';
+  document.getElementById('vcCompany').value = v.company || '';
+  document.getElementById('vcCarNumber').value = v.carNumber || '';
+  document.getElementById('vcEmpName').value = v.empName || '';
+
+  // 가장 최근에 입력한 날짜를 기본으로 표시 (이어서 다른 날짜 입력 가능)
+  const days = Object.keys(v.dayResults||{}).sort((a,b)=>(+a)-(+b));
+  const lastDay = days.length ? days[days.length-1] : '';
+  document.getElementById('vcDay').value = lastDay;
+  document.getElementById('vcRemark').value = (v.dayRemarks||{})[lastDay] || '';
+  vcResults = { ...((v.dayResults||{})[lastDay] || {}) };
+  vcRenderItems();
+  vcLoadSign((v.daySigns||{})[lastDay]);
+  toast(`${v.empName}님의 점검표를 불러왔습니다. (관리자 모드)`);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function vcDelete(id) {
+  if (!vcListUnlocked) { toast('관리자 인증 후 이용 가능합니다.'); return; }
+  if (!confirm('이 점검표를 삭제하시겠습니까?')) return;
+  const data = getData();
+  data.vehicleChecks = (data.vehicleChecks||[]).filter(v => v.id !== id);
+  await saveData(data);
+  if (vcEditId === id) vcResetForm();
+  vcRenderList();
+  toast('점검표가 삭제되었습니다.');
+}
+
+function vcPrint() {
+  const empName = document.getElementById('vcEmpName').value.trim();
+  const yearMonth = document.getElementById('vcYearMonth').value;
+  if (!empName) { toast('운수종사자명을 입력해주세요.'); return; }
+  if (!yearMonth) { toast('점검 연월을 입력해주세요.'); return; }
+
+  const data = getData();
+  let record = vcFindRecord(data, empName, yearMonth);
+
+  const company = (record && record.company) || document.getElementById('vcCompany').value.trim() || (data.settings?.company || '');
+  const carNumber = (record && record.carNumber) || document.getElementById('vcCarNumber').value.trim();
+  const dayResults = (record && record.dayResults) || {};
+  const dayRemarks = (record && record.dayRemarks) || {};
+
+  // 현재 화면에서 입력 중이지만 아직 저장 안 한 날짜 결과도 함께 반영
+  const curDay = document.getElementById('vcDay').value;
+  const mergedDayResults = { ...dayResults };
+  if (curDay && Object.keys(vcResults).length) mergedDayResults[curDay] = { ...vcResults };
+  const curRemark = document.getElementById('vcRemark').value.trim();
+  const mergedDayRemarks = { ...dayRemarks };
+  if (curDay && curRemark) mergedDayRemarks[curDay] = curRemark;
+
+  vcRenderPrintDoc(empName, yearMonth, company, carNumber, mergedDayResults, mergedDayRemarks, (getData().vehicleChecks.find(v=>v.id===vcEditId)||{}).daySigns);
+}
+
+// 공통 인쇄 문서 생성 (vcPrint, vcPrintRecord 둘 다 사용)
+function vcRenderPrintDoc(empName, yearMonth, company, carNumber, dayResults, dayRemarks, daySigns) {
+  const days = Array.from({length:31}, (_,i)=>i+1);
+
+  function cellMark(itemNo, d) {
+    const r = dayResults[d];
+    if (itemNo === 12) { // 서명란
+      const sign = (daySigns || {})[d];
+      return sign ? `<img src="${sign}" style="max-height:24px;max-width:100%;display:block;margin:0 auto;object-fit:contain">` : '';
+    }
+    return r ? (r[itemNo] || '') : '';
+  }
+
+  let rows = '';
+  let lastGroup = null;
+  const groupRowspan = { '외관점검':4, '상태점검':3, '기타':4, '확인':1 };
+  VC_ITEMS.forEach(item => {
+    rows += '<tr>';
+    if (item.group !== lastGroup) {
+      if (item.group === '확인') {
+        rows += `<td colspan="2" class="vc-label-col" style="text-align:center;font-weight:700;height:30px">${item.text}</td>`;
+      } else {
+        rows += `<td rowspan="${groupRowspan[item.group]}" class="vc-group-col">${item.group}</td>`;
+        rows += `<td class="vc-label-col">${item.text}</td>`;
+      }
+      lastGroup = item.group;
+    } else {
+      rows += `<td class="vc-label-col">${item.text}</td>`;
+    }
+    days.forEach(d => { rows += `<td>${cellMark(item.no, d)}</td>`; });
+    rows += '</tr>';
+  });
+
+  const remarkLines = Object.keys(dayRemarks||{})
+    .sort((a,b)=>(+a)-(+b))
+    .map(d => `${d}일: ${dayRemarks[d]}`)
+    .join(' / ');
+
+	  const [year, month] = (yearMonth || '').split('-');
+	  const html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>운수종사자 일상점검표</title>
+	  <style>
+	    @page { size:A4 landscape; margin:8mm; }
+	    * { box-sizing:border-box; }
+	    body { font-family:'Malgun Gothic',sans-serif; padding:0; margin:0; color:#000; line-height:1.2; }
+	    .vc-doc-sub { font-size:10px; margin-bottom:4px; font-weight:bold; }
+	    .vc-doc-title { text-align:center; font-size:22px; font-weight:800; margin:0 0 10px; }
+	    table { width:100%; border-collapse:collapse; table-layout:fixed; }
+	    th, td { border:1px solid #000; padding:4px 2px; text-align:center; word-break:break-all; }
+	    .vc-info-table td { padding:6px 10px; font-size:12px; height:38px; }
+	    .vc-info-table .label { background:#fff; font-weight:400; width:100px; }
+	    .vc-main-table th { padding:6px 1px; font-size:10px; background:#fff; font-weight:400; }
+	    .vc-main-table td { height:28px; font-size:11px; font-weight:700; }
+	    .vc-group-col { writing-mode:vertical-rl; font-weight:400; width:30px; font-size:10px; }
+	    .vc-label-col { text-align:left; font-size:9.5px; width:200px; padding-left:8px; line-height:1.3; }
+	    .vc-day-col { width:22px; }
+	    .vc-remark-table td { height:50px; text-align:left; vertical-align:top; padding:8px; font-size:11px; }
+	    .vc-sign-table td { height:40px; text-align:left; vertical-align:middle; padding:0 10px; font-size:11px; }
+	  </style></head><body>
+	    <div class="vc-doc-sub">■ 화물자동차 운수사업법 시행규칙 [별지 제14호의5서식] [시행: 2026. 6. 30.]</div>
+	    <div class="vc-doc-title">운수종사자 일상점검표</div>
+	    <table class="vc-info-table" style="margin-bottom:15px">
+	      <colgroup><col style="width:100px"><col style="width:140px"><col style="width:140px"><col><col style="width:140px"><col><col style="width:140px"><col></colgroup>
+	      <tr>
+	        <td class="label">점검연월</td>
+	        <td>20<span style="display:inline-block;width:30px;border-bottom:1px solid #000;margin:0 2px">${year?year.slice(-2):''}</span>년 <span style="display:inline-block;width:25px;border-bottom:1px solid #000;margin:0 2px">${month||''}</span>월</td>
+	        <td class="label">운송사업자명</td><td>${company || ''}</td>
+	        <td class="label">차량번호</td><td>${carNumber || ''}</td>
+	        <td class="label">운수종사자명</td><td>${empName || ''}</td>
+	      </tr>
+	    </table>
+	    <table class="vc-main-table">
+	      <colgroup>
+	        <col style="width:30px">
+	        <col style="width:200px">
+	        ${days.map(()=>`<col style="width:22px">`).join('')}
+	      </colgroup>
+	      <thead>
+	        <tr>
+	          <th colspan="2" rowspan="2">점검항목</th>
+	          <th colspan="31">점검결과(양호 ○, 불량 ×, 미운행시 "미" 기입)</th>
+	        </tr>
+	        <tr>${days.map(d=>`<th class="vc-day-col">${d}</th>`).join('')}</tr>
+	      </thead>
+	      <tbody>${rows}</tbody>
+	    </table>
+
+	    <table class="vc-info-table vc-remark-table">
+	      <colgroup><col style="width:230px"><col></colgroup>
+	      <tr><td class="label" style="text-align:center;width:230px">불량상태 조치 기록</td><td>${remarkLines || ''}</td></tr>
+	    </table>
+	  </body></html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
+  setTimeout(() => w.print(), 400);
+}
+
+
+
 Object.assign(window,{
   addEmployee,adminLogin,adminLogout,changeAdminPw,clearRole,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
@@ -5250,7 +5902,8 @@ Object.assign(window,{
   renderReport,renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
   setDateMode,setReportFilter,
   seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDragOverItem,seatDrop,
-  resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner
+  resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner,
+  vcInit,vcSetResult,vcSearchEmp,vcPickEmp,vcSave,vcResetForm,vcRenderList,vcLoad,vcDelete,vcPrint,vcOnDayChange,vcUnlockList,vcToggleAdminAuth,vcLockList,vcPrintRecord,vcSendRecord,vcExportPDF,vcSendEmail,openModal,closeModal
 });
 </script>
 </body>
