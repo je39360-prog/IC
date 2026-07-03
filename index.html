@@ -389,7 +389,7 @@ tr:nth-child(even){background:#fafbfc}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.31</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.33</span>
       </div>
     </div>
 
@@ -5017,11 +5017,11 @@ function loadStats() {
   // 직원별 통계 테이블
   const sumDiv=document.getElementById('statsSummary');
   if(!sumDiv) return;
-  let html=`<div style="overflow-x:auto;margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
+  let html=`<div style="overflow-x:auto;margin-top:12px;width:100%"><table style="width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed">
     <thead><tr style="background:var(--border-light)">
-      <th style="padding:8px;text-align:left">프로</th><th style="padding:8px">팀명</th>
-      <th style="padding:8px;color:#34a853">출석</th><th style="padding:8px;color:#fbbc04">지각</th>
-      <th style="padding:8px;color:#ea4335">결석</th><th style="padding:8px">합계</th><th style="padding:8px">출석률</th>
+      <th style="padding:8px;text-align:center;width:60px">프로</th><th style="padding:8px;width:80px">팀명</th>
+      <th style="padding:8px;color:#34a853;width:50px">출석</th><th style="padding:8px;color:#fbbc04;width:50px">지각</th>
+      <th style="padding:8px;color:#ea4335;width:50px">결석</th><th style="padding:8px;width:50px">합계</th><th style="padding:8px">출석률</th>
     </tr></thead><tbody>`;
   Object.values(byEmp).forEach(s=>{
     const rate=s.total?Math.round((s.attend/s.total)*100):0;
@@ -5556,9 +5556,18 @@ function vcSendEmail() {
   const data = getData();
   const v = (data.vehicleChecks||[]).find(x => x.id === vcTargetRecordId);
   if (!v) return;
-  const subject = encodeURIComponent(`[차량점검표] ${v.yearMonth} ${v.empName} (${v.carNumber||''})`);
-  const body = encodeURIComponent(`안녕하세요.\n\n${v.yearMonth} ${v.empName} 프로님의 차량(${v.carNumber||''}) 일상점검표입니다.\n상세 내용은 시스템에서 확인하시거나 첨부된 PDF를 확인해 주세요.\n\n감사합니다.`);
-  
+
+  const days = Object.keys(v.dayResults || {}).sort((a, b) => (+a) - (+b));
+  let summary = `[${v.yearMonth} 점검 요약]\n`;
+  days.forEach(d => {
+    const results = v.dayResults[d];
+    const bads = Object.keys(results).filter(k => results[k] === 'X');
+    summary += `- ${d}일: ${bads.length > 0 ? '불량 ' + bads.length + '건' : '양호'}\n`;
+  });
+
+  const subject = encodeURIComponent(`[차량점검표] ${v.yearMonth} ${v.empName} (${v.carNumber || ''})`);
+  const body = encodeURIComponent(`안녕하세요.\n\n${v.yearMonth} ${v.empName} 프로님의 차량(${v.carNumber || ''}) 일상점검표입니다.\n\n${summary}\n상세 내용은 PDF로 저장하여 첨부하시거나 시스템에서 확인해 주세요.\n\n감사합니다.`);
+
   window.location.href = `mailto:?subject=${subject}&body=${body}`;
 }
 
