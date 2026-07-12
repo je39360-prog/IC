@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#1a73e8">
+<meta name="theme-color" content="#0D1B2A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="운수관리">
@@ -15,8 +15,55 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#f0f2f5;--card:#fff;--primary:#1a73e8;--primary-dark:#1557b0;--success:#34a853;--success-bg:#e6f4ea;--warning:#f9ab00;--warning-bg:#fef7e0;--danger:#ea4335;--danger-bg:#fce8e6;--text:#202124;--text2:#5f6368;--text3:#9aa0a6;--border:#dadce0;--border-light:#f1f3f4;--shadow:0 2px 12px rgba(0,0,0,.08);--shadow-lg:0 8px 32px rgba(0,0,0,.12);--radius:12px;--radius-lg:16px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans KR','Apple SD Gothic Neo',sans-serif;--transition:.2s cubic-bezier(.4,0,.2,1)}
-body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;line-height:1.5;padding-bottom:env(safe-area-inset-bottom)}
+:root{
+  /* ── 브랜드 팔레트 ── */
+  --navy:#0D1B2A;          /* 메인 배경 – 다크 스틸 네이비 */
+  --navy-mid:#162332;      /* 카드 내부 세컨더리 배경 */
+  --navy-light:#1E2F41;    /* 카드 배경 */
+  --navy-border:#263C52;   /* 보더 */
+  --amber:#F4A020;         /* 주 액센트 – 앰버 오렌지 */
+  --amber-dark:#D4880A;    /* 액센트 다크 */
+  --amber-glow:rgba(244,160,32,.18); /* 글로우 */
+  --ice:#EEF3F8;           /* 아이스 화이트 – 텍스트/뱃지 배경 */
+
+  /* ── 시맨틱 매핑 ── */
+  --bg:var(--navy);
+  --card:var(--navy-light);
+  --primary:var(--amber);
+  --primary-dark:var(--amber-dark);
+  --success:#3DD68C;
+  --success-bg:rgba(61,214,140,.14);
+  --warning:#F4A020;
+  --warning-bg:rgba(244,160,32,.14);
+  --danger:#FF6B6B;
+  --danger-bg:rgba(255,107,107,.14);
+  --text:#EEF3F8;
+  --text2:#8FA8BF;
+  --text3:#4D6A82;
+  --border:var(--navy-border);
+  --border-light:var(--navy-mid);
+  --shadow:0 4px 20px rgba(0,0,0,.35);
+  --shadow-lg:0 12px 40px rgba(0,0,0,.50);
+  --radius:12px;
+  --radius-lg:18px;
+  --font:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo',sans-serif;
+  --transition:.22s cubic-bezier(.4,0,.2,1);
+}
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700;900&display=swap');
+body{
+  font-family:var(--font);
+  background:var(--navy);
+  /* 미세한 탄소섬유 격자 질감 */
+  background-image:
+    linear-gradient(rgba(255,255,255,.022) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.022) 1px,transparent 1px);
+  background-size:32px 32px;
+  color:var(--text);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  line-height:1.5;
+  padding-bottom:env(safe-area-inset-bottom);
+}
 /* iOS Safe Area */
 .nav{padding-left:env(safe-area-inset-left);padding-right:env(safe-area-inset-right)}
 .hide{display:none!important}
@@ -28,23 +75,57 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 @keyframes shimmer{0%{background-position:-200px 0}100%{background-position:200px 0}}
 
 /* Nav */
-.nav{display:flex;background:var(--card);box-shadow:var(--shadow);position:sticky;top:0;z-index:100;overflow-x:auto}
-.nav-btn{flex:1;padding:14px 10px;border:none;background:transparent;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer;transition:all var(--transition);white-space:nowrap;display:flex;align-items:center;justify-content:center;gap:6px;position:relative}
-.nav-btn:hover{color:var(--primary);background:var(--border-light)}
-.nav-btn.active{color:var(--primary)}
-.nav-btn.active::after{content:'';position:absolute;bottom:0;left:10%;right:10%;height:3px;background:var(--primary);border-radius:3px 3px 0 0}
+.nav{
+  display:flex;
+  background:var(--navy-mid);
+  border-bottom:1px solid var(--navy-border);
+  /* 상단 앰버 라인 – 시그니처 */
+  box-shadow:0 -3px 0 var(--amber) inset, 0 4px 24px rgba(0,0,0,.5);
+  position:sticky;top:0;z-index:100;overflow-x:auto;
+}
+.nav-btn{
+  flex:1;padding:13px 8px 12px;
+  border:none;background:transparent;
+  font-size:12px;font-weight:600;
+  color:var(--text3);
+  cursor:pointer;transition:all var(--transition);
+  white-space:nowrap;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  position:relative;letter-spacing:.3px;
+}
+.nav-btn:hover{color:var(--amber);background:var(--amber-glow)}
+.nav-btn.active{color:var(--amber)}
+.nav-btn.active::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,transparent,var(--amber),transparent);
+  border-radius:0;
+}
 
 .page{padding:16px;max-width:800px;margin:0 auto;animation:fadeIn var(--transition);display:none}
 .page.active{display:block}
 
 /* Card */
-.card{background:var(--card);border-radius:var(--radius-lg);box-shadow:var(--shadow);padding:24px 20px;margin-bottom:16px;animation:slideUp .3s ease}
-.card-title{font-size:16px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.card-title i{color:var(--primary)}
+.card{
+  background:var(--navy-light);
+  border:1px solid var(--navy-border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:24px 20px;margin-bottom:16px;
+  animation:slideUp .3s ease;
+  position:relative;overflow:hidden;
+}
+/* 카드 좌측 앰버 액센트 라인 – 시그니처 */
+.card::before{
+  content:'';position:absolute;top:0;left:0;bottom:0;width:3px;
+  background:linear-gradient(180deg,var(--amber),var(--amber-dark));
+  border-radius:var(--radius-lg) 0 0 var(--radius-lg);
+}
+.card-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;letter-spacing:.3px}
+.card-title i{color:var(--amber)}
 /* Employee selection grid */
 .emp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-top:8px;animation:fadeIn .3s ease}
-.emp-card{background:var(--card);border:2px solid var(--border);border-radius:var(--radius);padding:14px 8px;text-align:center;cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden}
-.emp-card:hover{transform:translateY(-2px);box-shadow:var(--shadow);border-color:var(--primary)}
+.emp-card{background:var(--navy-mid);border:1.5px solid var(--navy-border);border-radius:var(--radius);padding:14px 8px;text-align:center;cursor:pointer;transition:all var(--transition);position:relative;overflow:hidden}
+.emp-card:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.4);border-color:var(--amber);background:var(--navy-light)}
 .emp-card:active{transform:scale(.95)}
 .emp-card .name{font-size:15px;font-weight:700}
 .emp-card .team{font-size:11px;color:var(--text2);margin-top:2px}
@@ -53,13 +134,13 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .emp-card .status-dot.late{background:var(--warning)}
 .emp-card .status-dot.absent{background:var(--danger)}
 .emp-card .status-dot.nocheck{background:var(--text3)}
-.emp-card.checked{background:var(--success-bg);border-color:var(--success);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.checked{background:rgba(61,214,140,.1);border-color:var(--success);opacity:.7;cursor:default;transform:none!important;pointer-events:none}
 .emp-card.checked .name{color:var(--success)}
 .emp-card.checked .name::after{content:' ✓';font-weight:700}
 .emp-card.checked .team{color:var(--success)}
-.emp-card.late-checked{background:var(--warning-bg);border-color:var(--warning);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.late-checked{background:rgba(244,160,32,.1);border-color:var(--warning);opacity:.7;cursor:default;transform:none!important;pointer-events:none}
 .emp-card.late-checked .name{color:var(--warning)}
-.emp-card.absent-checked{background:var(--danger-bg);border-color:var(--danger);opacity:.6;cursor:default;transform:none!important;pointer-events:none}
+.emp-card.absent-checked{background:rgba(255,107,107,.1);border-color:var(--danger);opacity:.7;cursor:default;transform:none!important;pointer-events:none}
 .emp-card.absent-checked .name{color:var(--danger)}
 .team-header{font-size:14px;font-weight:700;color:var(--primary);margin:12px 0 4px;padding-bottom:4px;border-bottom:2px solid var(--primary);text-align:left;grid-column:1/-1}
 .search-wrap{position:relative;margin-bottom:12px}
@@ -67,30 +148,41 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:1
 .search-wrap input{padding-left:36px!important}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all var(--transition);text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;border:none;cursor:pointer;transition:all var(--transition);text-decoration:none;letter-spacing:.2px}
 .btn:active{transform:scale(.97)}
-.btn-p{background:linear-gradient(135deg,var(--primary),#4285f4);color:#fff;box-shadow:0 4px 12px rgba(26,115,232,.3)}
-.btn-p:hover{box-shadow:0 6px 20px rgba(26,115,232,.4)}
-.btn-s{background:var(--border-light);color:var(--text)}
-.btn-s:hover{background:#e8eaed}
-.btn-success{background:linear-gradient(135deg,var(--success),#2d9249);color:#fff;box-shadow:0 4px 12px rgba(52,168,83,.3)}
-.btn-danger{background:linear-gradient(135deg,var(--danger),#d33426);color:#fff;box-shadow:0 4px 12px rgba(234,67,53,.3)}
+.btn-p{background:linear-gradient(135deg,var(--amber),var(--amber-dark));color:#0D1B2A;box-shadow:0 4px 16px rgba(244,160,32,.28)}
+.btn-p:hover{box-shadow:0 6px 24px rgba(244,160,32,.42);filter:brightness(1.07)}
+.btn-s{background:var(--navy-mid);color:var(--text2);border:1px solid var(--navy-border)}
+.btn-s:hover{background:var(--navy-border);color:var(--text)}
+.btn-success{background:linear-gradient(135deg,var(--success),#2ab87a);color:#0D1B2A;box-shadow:0 4px 12px rgba(61,214,140,.22)}
+.btn-danger{background:linear-gradient(135deg,var(--danger),#e04545);color:#fff;box-shadow:0 4px 12px rgba(255,107,107,.28)}
 .btn-sm{padding:6px 12px;font-size:12px;width:auto}
 .btn-block{width:100%}
-.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
 /* Input */
 .input-group{display:flex;gap:8px}
-.input-group input{flex:1;padding:10px 12px;border:2px solid var(--border);border-radius:var(--radius);font-size:14px;transition:border-color var(--transition)}
-.input-group input:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
-.input-group button{padding:10px 20px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius);font-weight:600;cursor:pointer}
+.input-group input{flex:1;padding:10px 12px;border:1.5px solid var(--navy-border);border-radius:var(--radius);font-size:14px;transition:border-color var(--transition);background:var(--navy-mid);color:var(--text)}
+.input-group input:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-glow)}
+.input-group button{padding:10px 20px;background:linear-gradient(135deg,var(--amber),var(--amber-dark));color:#0D1B2A;border:none;border-radius:var(--radius);font-weight:700;cursor:pointer}
 
-input,select,textarea{padding:10px 12px;border:2px solid var(--border);border-radius:var(--radius-sm,8px);font-size:14px;transition:border-color var(--transition);font-family:inherit;width:100%}
-input:focus,select:focus,textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,115,232,.1)}
+input,select,textarea{
+  padding:10px 12px;
+  border:1.5px solid var(--navy-border);
+  border-radius:var(--radius-sm,8px);
+  font-size:14px;
+  transition:border-color var(--transition),box-shadow var(--transition);
+  font-family:inherit;width:100%;
+  background:var(--navy-mid);
+  color:var(--text);
+}
+input::placeholder,textarea::placeholder{color:var(--text3)}
+select option{background:var(--navy-light);color:var(--text)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--amber);box-shadow:0 0 0 3px var(--amber-glow)}
 textarea{resize:vertical;min-height:60px}
 
 /* Logo */
-.logo{width:56px;height:56px;background:linear-gradient(135deg,var(--primary),#4285f4);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#fff;font-size:24px;box-shadow:0 4px 12px rgba(26,115,232,.3)}
+.logo{width:56px;height:56px;background:linear-gradient(135deg,var(--amber),var(--amber-dark));border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 12px;color:#0D1B2A;font-size:24px;box-shadow:0 4px 20px rgba(244,160,32,.35)}
 .logo-sm{width:40px;height:40px;font-size:18px}
 
 /* Scanner */
@@ -111,22 +203,35 @@ textarea{resize:vertical;min-height:60px}
 
 /* Summary cards */
 .summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:8px;margin-bottom:16px}
-.summary-card{background:var(--card);border-radius:var(--radius);padding:14px 10px;text-align:center;box-shadow:var(--shadow)}
-.summary-card .num{font-size:28px;font-weight:700}
-.summary-card .label{font-size:11px;color:var(--text2);margin-top:2px}
+.summary-card{
+  background:var(--navy-mid);
+  border:1px solid var(--navy-border);
+  border-radius:var(--radius);
+  padding:14px 10px;text-align:center;
+  box-shadow:var(--shadow);
+  position:relative;overflow:hidden;
+}
+.summary-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;opacity:.6}
+.summary-card.attend::after{background:var(--success)}
+.summary-card.late::after{background:var(--warning)}
+.summary-card.absent::after{background:var(--danger)}
+.summary-card.total::after{background:var(--amber)}
+.summary-card .num{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-1px}
+.summary-card .label{font-size:10px;color:var(--text3);margin-top:2px;letter-spacing:.5px;font-weight:600;text-transform:uppercase}
 .summary-card .icon{margin-bottom:6px;font-size:18px}
 .summary-card.attend .num,.summary-card.attend .icon{color:var(--success)}
 .summary-card.late .num,.summary-card.late .icon{color:var(--warning)}
 .summary-card.absent .num,.summary-card.absent .icon{color:var(--danger)}
 .summary-card.nocheck .num,.summary-card.nocheck .icon{color:var(--text3)}
-.summary-card.total .num,.summary-card.total .icon{color:var(--primary)}
+.summary-card.total .num,.summary-card.total .icon{color:var(--amber)}
 
 /* Table */
-.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border);max-height:400px;overflow-y:auto}
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--navy-border);max-height:400px;overflow-y:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--border)}
-th{background:var(--border-light);font-weight:600;font-size:11px;color:var(--text2);position:sticky;top:0;z-index:1}
-tr:nth-child(even){background:#fafbfc}
+th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--navy-border)}
+th{background:var(--navy-mid);font-weight:700;font-size:10px;color:var(--text3);position:sticky;top:0;z-index:1;letter-spacing:.8px;text-transform:uppercase}
+tr:nth-child(even){background:rgba(255,255,255,.025)}
+tr:hover td{background:var(--amber-glow)}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state i{font-size:40px;margin-bottom:10px;display:block}
 
@@ -137,7 +242,7 @@ tr:nth-child(even){background:#fafbfc}
 .report-header .sub{font-size:13px;color:var(--text2)}
 .report-header .date{font-size:11px;color:var(--text3);margin-top:4px}
 .report-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
-.report-summary .item{text-align:center;padding:8px 4px;background:#f8f9fa;border-radius:6px;font-size:10px}
+.report-summary .item{text-align:center;padding:8px 4px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:6px;font-size:10px}
 .report-summary .item .n{font-size:20px;font-weight:700}
 .report-summary .item.attend .n{color:var(--success)}
 .report-summary .item.late .n{color:var(--warning)}
@@ -146,16 +251,16 @@ tr:nth-child(even){background:#fafbfc}
 .report-summary .item.total .n{color:var(--primary)}
 /* 차량점검표 */
 .vc-section-title{font-size:12px;font-weight:700;color:var(--primary);margin:14px 0 8px;display:flex;align-items:center;gap:6px}
-.vc-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--border-light);border-radius:var(--radius);margin-bottom:8px}
-.vc-item-num{width:22px;height:22px;border-radius:50%;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.vc-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:var(--radius);margin-bottom:8px}
+.vc-item-num{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--amber),var(--amber-dark));color:#0D1B2A;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
 .vc-item-text{flex:1;font-size:13px;line-height:1.4}
 .vc-item-result{display:flex;gap:5px;flex-shrink:0}
-.vc-result-btn{width:34px;height:34px;border-radius:8px;border:2px solid var(--border);background:#fff;cursor:pointer;font-size:14px;font-weight:700;color:var(--text2);transition:all .15s}
-.vc-result-btn.sel-good{background:#e6f4ea;border-color:#34a853;color:#1e7e34}
-.vc-result-btn.sel-bad{background:#fce8e6;border-color:#ea4335;color:#c5221f}
-.vc-result-btn.sel-na{background:#f1f3f4;border-color:#9aa0a6;color:#5f6368}
-.vc-card{border:1px solid var(--border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background .15s}
-.vc-card:hover{background:var(--border-light)}
+.vc-result-btn{width:34px;height:34px;border-radius:8px;border:1.5px solid var(--navy-border);background:var(--navy-mid);cursor:pointer;font-size:14px;font-weight:700;color:var(--text3);transition:all .15s}
+.vc-result-btn.sel-good{background:rgba(61,214,140,.15);border-color:var(--success);color:var(--success)}
+.vc-result-btn.sel-bad{background:rgba(255,107,107,.15);border-color:var(--danger);color:var(--danger)}
+.vc-result-btn.sel-na{background:var(--navy-border);border-color:var(--text3);color:var(--text2)}
+.vc-card{border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:12px 14px;margin-bottom:8px;cursor:pointer;transition:background .15s;background:var(--navy-mid)}
+.vc-card:hover{background:var(--navy-border)}
 .vc-print-table{width:100%;border-collapse:collapse;font-size:9px}
 .vc-print-table th,.vc-print-table td{border:1px solid #333;padding:3px 4px;text-align:center}
 .vc-print-table .vc-label-col{text-align:left;font-size:9px}
@@ -186,9 +291,20 @@ tr:nth-child(even){background:#fafbfc}
 .clock-display .date{font-size:13px;color:var(--text2);margin-top:4px}
 
 /* Check-in button */
-.btn-checkin{background:linear-gradient(135deg,var(--primary),#4285f4);color:#fff;padding:18px 24px;font-size:18px;font-weight:700;border:none;border-radius:var(--radius-lg);cursor:pointer;width:100%;transition:all var(--transition);box-shadow:0 4px 15px rgba(26,115,232,.3);display:flex;align-items:center;justify-content:center;gap:8px}
+.btn-checkin{
+  background:linear-gradient(135deg,var(--amber) 0%,var(--amber-dark) 100%);
+  color:#0D1B2A;
+  padding:18px 24px;font-size:18px;font-weight:900;
+  border:none;border-radius:var(--radius-lg);
+  cursor:pointer;width:100%;
+  transition:all var(--transition);
+  box-shadow:0 6px 24px rgba(244,160,32,.38);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  letter-spacing:.3px;
+}
+.btn-checkin:hover{box-shadow:0 8px 32px rgba(244,160,32,.52);filter:brightness(1.06)}
 .btn-checkin:active{transform:scale(.96)}
-.btn-checkin:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-checkin:disabled{opacity:.4;cursor:not-allowed;transform:none}
 
 /* Result animation */
 .result-wrap{text-align:center;padding:20px 0;animation:scaleIn .4s ease}
@@ -239,7 +355,7 @@ tr:nth-child(even){background:#fafbfc}
 
 /* Modal overlay */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;display:flex;align-items:center;justify-content:center;padding:16px}
-.modal-content{background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:100%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto}
+.modal-content{background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:24px 20px;width:100%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto}
 .modal-title{font-size:16px;font-weight:700;margin-bottom:4px}
 
 /* ===== MOBILE RESPONSIVE ===== */
@@ -367,10 +483,10 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 }
 .seat:hover{transform:scale(1.12);z-index:2}
 .seat:active{cursor:grabbing!important}
-.seat.attend {background:#e6f4ea;border-color:#34a853;color:#1e7e34}
-.seat.late   {background:#fff8e1;border-color:#fbbc04;color:#b06000}
-.seat.absent {background:#fce8e6;border-color:#ea4335;color:#c5221f}
-.seat.nocheck{background:#f1f3f4;border-color:#dadce0;color:#9aa0a6}
+.seat.attend {background:rgba(61,214,140,.13);border-color:var(--success);color:var(--success)}
+.seat.late   {background:rgba(244,160,32,.13);border-color:var(--warning);color:var(--warning)}
+.seat.absent {background:rgba(255,107,107,.13);border-color:var(--danger);color:var(--danger)}
+.seat.nocheck{background:var(--navy-mid);border-color:var(--navy-border);color:var(--text3)}
 .seat .seat-icon{font-size:18px;line-height:1}
 .seat .seat-name{font-size:9px;text-align:center;line-height:1.2;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seat-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;align-items:center}
@@ -473,9 +589,9 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 <!-- ============== 출석체크 탭 ============== -->
 <div class="page active" id="tab-checkin">
   <div class="card" style="text-align:center">
-    <div class="logo"><i class="fas fa-clock"></i></div>
-    <h1 style="font-size:20px;margin-bottom:4px">아침 조회 출석 체크</h1>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:16px">QR 코드를 스캔하여 출석 체크를 진행하세요</p>
+    <div class="logo"><i class="fas fa-truck-moving"></i></div>
+    <h1 style="font-size:20px;margin-bottom:4px;font-weight:900;letter-spacing:.5px">아침 조회 출석 체크</h1>
+    <p style="color:var(--text3);font-size:12px;margin-bottom:16px;letter-spacing:.5px;text-transform:uppercase;font-weight:600">ICHEON LOGISTICS · 이천물류</p>
 
     <!-- QR 링크로 접근 전 기본 안내 화면 -->
     <div id="checkinGuide">
@@ -501,7 +617,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.35</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.37</span>
       </div>
     </div>
 
@@ -564,7 +680,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
       <div style="grid-column:1/-1;position:relative">
         <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">운수종사자명</label>
         <input type="text" id="vcEmpName" placeholder="프로 입력 (직원 검색)" oninput="vcSearchEmp()" autocomplete="off">
-        <div id="vcEmpSuggest" style="position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);z-index:50;max-height:200px;overflow-y:auto;display:none"></div>
+        <div id="vcEmpSuggest" style="position:absolute;top:100%;left:0;right:0;background:var(--navy-light);border:1px solid var(--navy-border);border-radius:8px;box-shadow:var(--shadow-lg);z-index:50;max-height:200px;overflow-y:auto;display:none"></div>
       </div>
     </div>
 
@@ -576,7 +692,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     <div id="vcSignSection" style="margin-top:16px;border-top:1.5px dashed var(--border);padding-top:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--primary)"><i class="fas fa-pen-nib"></i> 점검자 확인(서명)</div>
       <div style="background:var(--border-light);border-radius:var(--radius);padding:10px;text-align:center">
-        <canvas id="vcSignCanvas" width="300" height="120" style="background:#fff;border:1.5px solid var(--border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
+        <canvas id="vcSignCanvas" width="300" height="120" style="background:var(--navy-mid);border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
         <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
           <button class="btn btn-sm btn-s" onclick="vcClearSign()"><i class="fas fa-eraser"></i> 지우기</button>
         </div>
@@ -695,7 +811,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 
         <!-- 사유 수정 모달 -->
         <div id="reasonModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
-          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg)">
+          <div style="background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg)">
             <h3 style="font-size:16px;margin-bottom:4px;display:flex;align-items:center;gap:6px"><i class="fas fa-edit" style="color:var(--primary)"></i> 출석 정보 수정</h3>
             <p id="reasonModalName" style="font-size:13px;color:var(--text2);margin-bottom:14px"></p>
             <label style="font-size:12px;font-weight:600;display:block;margin-bottom:6px">상태</label>
@@ -736,11 +852,11 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         </div>
         <div class="card-title" style="font-size:14px;margin-bottom:8px"><i class="fas fa-users"></i> 직원 목록</div>
         <div style="margin-bottom:8px"><input type="text" id="empSearch" placeholder="프로 / 팀명 / ID 검색" oninput="renderEmployees()"></div>
-        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th>ID</th><th>프로</th><th>팀명</th><th>직책</th><th>차량번호</th><th>연락처</th><th>상태</th><th>관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
+        <div class="table-wrap" style="max-height:350px"><table><thead><tr><th style="width:52px">ID</th><th style="width:56px">프로</th><th style="width:56px">팀명</th><th style="width:52px">직책</th><th style="width:72px">차량번호</th><th>연락처</th><th style="width:40px">상태</th><th style="width:100px">관리</th></tr></thead><tbody id="empTable"></tbody></table></div>
 
         <!-- 직원 정보 수정 모달 -->
         <div id="carModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:500;align-items:center;justify-content:center">
-          <div style="background:#fff;border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto">
+          <div style="background:var(--navy-light);border:1px solid var(--navy-border);border-radius:var(--radius-lg);padding:24px 20px;width:90%;max-width:380px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease;max-height:90vh;overflow-y:auto">
             <h3 style="font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:6px"><i class="fas fa-user-edit" style="color:var(--primary)"></i> 직원 정보 수정</h3>
             <label style="font-size:11px;font-weight:600;display:block;margin-bottom:4px">프로</label>
             <input type="text" id="empNameInput" placeholder="프로 입력" maxlength="20" style="margin-bottom:12px">
@@ -866,7 +982,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     <p style="color:var(--text2);font-size:12px"><i class="fas fa-info-circle"></i> 보고서는 인쇄하여 A4 용지로 출력할 수 있습니다.</p>
   </div>
 
-  <div id="reportContent" class="report-wrap" style="background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow)">
+  <div id="reportContent" class="report-wrap" style="background:var(--navy-light);border-radius:var(--radius-lg);box-shadow:var(--shadow)">
     <div style="text-align:center;padding:60px 20px;color:var(--text3)">
       <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:12px;display:block"></i>
       <p>보고서를 생성하려면 날짜를 선택하고 새로고침 버튼을 눌러주세요.</p>
@@ -4830,31 +4946,32 @@ function renderEmployees() {
     const act=emp.active!==false, car=emp.car||'', phone=emp.phone||'';
     const role=emp.role||'';
     const roleDisplay = role==='팀장'
-      ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
+      ? `<span style="font-size:10px;background:rgba(244,160,32,.18);color:var(--amber);padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">팀장</span>`
       : role==='부팀장'
-      ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      ? `<span style="font-size:10px;background:rgba(61,214,140,.15);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">부팀장</span>`
       : role==='대명장'
-      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
+      ? `<span style="font-size:10px;background:rgba(255,107,107,.15);color:var(--danger);padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">대명장</span>`
       : role==='명장'
-      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
+      ? `<span style="font-size:10px;background:rgba(255,107,107,.12);color:var(--danger);padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">명장</span>`
       : role==='프로'
-      ? `<span style="font-size:11px;background:#e6f4ea;color:#1e7e34;padding:2px 8px;border-radius:8px;font-weight:700">프로</span>`
+      ? `<span style="font-size:10px;background:rgba(61,214,140,.12);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700;white-space:nowrap">프로</span>`
       : `<span style="color:var(--text3);font-size:11px">-</span>`;
-    const carDisplay=car?`<span style="font-size:12px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:10px"></i> ${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
-    const phoneDisplay=phone?`<span style="font-size:12px">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+    const carDisplay=car?`<span style="font-size:10px;background:rgba(244,160,32,.12);color:var(--amber);padding:2px 6px;border-radius:6px;font-weight:600;white-space:nowrap;display:inline-flex;align-items:center;gap:3px"><i class="fas fa-car" style="font-size:9px"></i>${car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+    const phoneDisplay=phone?`<span style="font-size:11px;color:var(--text2)">${phone}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     const isSpecialTeam = emp.team==='대명장' || emp.team==='명장';
-    const teamStyle = isSpecialTeam ? 'style="color:#c0392b;font-weight:800"' : '';
+    const teamStyle = isSpecialTeam ? 'style="color:var(--danger);font-weight:800"' : '';
     tbody.innerHTML+=`<tr>
-      <td>${emp.id}</td><td><strong>${emp.name}</strong></td><td><span ${teamStyle}>${emp.team}</span></td>
+      <td style="font-size:11px;color:var(--text3)">${emp.id}</td><td><strong style="font-size:12px">${emp.name}</strong></td><td style="font-size:12px"><span ${teamStyle}>${emp.team}</span></td>
       <td>${roleDisplay}</td>
       <td>${carDisplay}</td><td>${phoneDisplay}</td>
-      <td><span class="badge ${act?'active':'inactive'}">${act?'활성':'비활성'}</span></td>
-      <td style="white-space:nowrap">
-        ${act?`<button class="btn btn-sm btn-danger" onclick="toggleEmp('${emp.id}')"><i class="fas fa-ban"></i></button> `:`<button class="btn btn-sm btn-success" onclick="toggleEmp('${emp.id}')"><i class="fas fa-check"></i></button> `}
-        <button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8" onclick="openCarModal('${emp.id}')" title="정보 수정"><i class="fas fa-edit"></i></button>
-        <button class="btn btn-sm" style="background:#fef7e0;color:#b06000" onclick="resetEmpAuth('${emp.id}','${emp.name}')" title="본인 인증 초기화"><i class="fas fa-user-clock"></i></button>
-        <button class="btn btn-sm btn-s" onclick="regenQR('${emp.id}')"><i class="fas fa-sync"></i></button>
-        <button class="btn btn-sm btn-danger" onclick="deleteEmp('${emp.id}')"><i class="fas fa-trash"></i></button>
+      <td><span class="badge ${act?'active':'inactive'}" style="font-size:10px">${act?'활성':'비활성'}</span></td>
+      <td style="white-space:nowrap;padding:4px 4px">
+        <div style="display:flex;gap:3px;justify-content:center;flex-wrap:nowrap">
+        ${act?`<button class="btn btn-sm btn-danger" onclick="toggleEmp('${emp.id}')" title="비활성화" style="padding:4px 7px;min-height:30px"><i class="fas fa-ban" style="font-size:11px"></i></button>`:`<button class="btn btn-sm btn-success" onclick="toggleEmp('${emp.id}')" title="활성화" style="padding:4px 7px;min-height:30px"><i class="fas fa-check" style="font-size:11px"></i></button>`}
+        <button class="btn btn-sm" style="background:rgba(244,160,32,.15);color:var(--amber);padding:4px 7px;min-height:30px" onclick="openCarModal('${emp.id}')" title="정보 수정"><i class="fas fa-edit" style="font-size:11px"></i></button>
+        <button class="btn btn-sm btn-s" onclick="regenQR('${emp.id}')" title="QR재생성" style="padding:4px 7px;min-height:30px"><i class="fas fa-sync" style="font-size:11px"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="deleteEmp('${emp.id}')" title="삭제" style="padding:4px 7px;min-height:30px"><i class="fas fa-trash" style="font-size:11px"></i></button>
+        </div>
       </td></tr>`;
   });
   if (!filtered.length) tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
