@@ -237,18 +237,19 @@ tr:hover td{background:var(--amber-glow)}
 
 /* Report */
 .report-wrap{max-width:190mm;margin:0 auto;padding:20px}
-.report-header{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:3px solid var(--primary)}
-.report-header h1{font-size:22px;color:var(--primary);margin-bottom:2px}
+.report-header{text-align:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--amber)}
+.report-header h1{font-size:20px;color:var(--amber);margin-bottom:4px;font-weight:900;letter-spacing:.5px}
 .report-header .sub{font-size:13px;color:var(--text2)}
 .report-header .date{font-size:11px;color:var(--text3);margin-top:4px}
 .report-summary{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
-.report-summary .item{text-align:center;padding:8px 4px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:6px;font-size:10px}
-.report-summary .item .n{font-size:20px;font-weight:700}
-.report-summary .item.attend .n{color:var(--success)}
-.report-summary .item.late .n{color:var(--warning)}
-.report-summary .item.absent .n{color:var(--danger)}
-.report-summary .item.nocheck .n{color:var(--text3)}
-.report-summary .item.total .n{color:var(--primary)}
+.report-summary .item,.report-stat{text-align:center;padding:10px 4px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:8px;font-size:10px;color:var(--text3);font-weight:600;letter-spacing:.4px;text-transform:uppercase}
+.report-summary .item .n,.report-stat .n{font-size:22px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-1px;display:block;margin-bottom:2px;color:var(--text)}
+.report-stat.attend .n{color:var(--success)}
+.report-stat.late .n{color:var(--warning)}
+.report-stat.absent .n{color:var(--danger)}
+.report-stat.attend{border-bottom:2px solid var(--success)}
+.report-stat.late{border-bottom:2px solid var(--warning)}
+.report-stat.absent{border-bottom:2px solid var(--danger)}
 /* 차량점검표 */
 .vc-section-title{font-size:12px;font-weight:700;color:var(--primary);margin:14px 0 8px;display:flex;align-items:center;gap:6px}
 .vc-item{display:flex;align-items:flex-start;gap:10px;padding:12px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:var(--radius);margin-bottom:8px}
@@ -264,26 +265,27 @@ tr:hover td{background:var(--amber-glow)}
 .vc-print-table{width:100%;border-collapse:collapse;font-size:9px}
 .vc-print-table th,.vc-print-table td{border:1px solid #333;padding:3px 4px;text-align:center}
 .vc-print-table .vc-label-col{text-align:left;font-size:9px}
-.report-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:12px}
-.report-table th{background:var(--primary);color:#fff;padding:5px 4px;font-size:9px;text-align:center}
-.report-table td{padding:4px;border-bottom:1px solid #eee;text-align:center;font-size:9.5px;vertical-align:middle}
-.report-table tr:nth-child(even){background:#f8f9fa}
+.report-table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:0}
+.report-table th{background:var(--navy-mid);color:var(--text3);padding:6px 4px;font-size:9px;text-align:center;border-bottom:2px solid var(--amber);letter-spacing:.5px;text-transform:uppercase}
+.report-table td{padding:5px 4px;border-bottom:1px solid var(--navy-border);text-align:center;font-size:9.5px;vertical-align:middle;color:var(--text)}
+.report-table tr:nth-child(even) td{background:rgba(255,255,255,.03)}
+.report-table tr:hover td{background:var(--amber-glow)}
 .report-table td.col-name{text-align:center;font-weight:700;min-width:48px;max-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .report-table .col-no{width:22px;text-align:center}
 .report-table .col-id{width:46px;text-align:center}
 .report-table .col-name{width:56px;text-align:center}
-.report-table .col-car{width:60px;text-align:center}
+.report-table .col-car{width:60px;text-align:center;color:var(--amber);font-weight:600}
 .report-table .col-time{width:44px;text-align:center}
 .report-table .col-status{width:38px;text-align:center}
-.report-table .col-reason{width:60px;text-align:left;font-size:8px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px}
+.report-table .col-reason{width:60px;text-align:left;font-size:8px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60px}
 .report-table .col-team{width:50px;text-align:center}
-.report-status{display:inline-block;padding:1px 8px;border-radius:8px;font-weight:600;font-size:9px}
-.report-status.attend{background:var(--success-bg);color:var(--success)}
-.report-status.late{background:var(--warning-bg);color:var(--warning)}
-.report-status.absent{background:var(--danger-bg);color:var(--danger)}
-.report-status.nocheck{background:var(--border-light);color:var(--text3)}
-.report-footer{margin-top:16px;padding-top:8px;border-top:1px solid #ddd;display:flex;justify-content:space-between;font-size:9px;color:var(--text3)}
-.report-sign{display:inline-block;width:100px;border-bottom:1px solid #ccc;margin-left:6px}
+.report-status{display:inline-block;padding:2px 7px;border-radius:6px;font-weight:700;font-size:9px;letter-spacing:.2px}
+.report-status.attend{background:rgba(61,214,140,.15);color:var(--success)}
+.report-status.late{background:rgba(244,160,32,.15);color:var(--warning)}
+.report-status.absent{background:rgba(255,107,107,.15);color:var(--danger)}
+.report-status.nocheck{background:var(--navy-mid);color:var(--text3)}
+.report-footer{margin-top:16px;padding-top:8px;border-top:1px solid var(--navy-border);display:flex;justify-content:space-between;font-size:9px;color:var(--text3)}
+.report-sign{display:inline-block;width:100px;border-bottom:1px solid var(--navy-border);margin-left:6px}
 
 /* Clock */
 .clock-display{text-align:center;margin-bottom:16px}
@@ -617,7 +619,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.37</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.38</span>
       </div>
     </div>
 
@@ -4911,7 +4913,7 @@ function loadTodayAdmin() {
   tbody.innerHTML='';
   rows.forEach(r=>{
     const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
-    const carCell=r.car?`<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:1px 7px;border-radius:8px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+    const carCell=r.car?`<span style="font-size:11px;background:rgba(244,160,32,.12);color:var(--amber);padding:1px 7px;border-radius:6px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
     tbody.innerHTML+=`<tr>
       <td>${r.id}</td>
       <td><strong>${r.name}</strong></td>
@@ -4920,7 +4922,7 @@ function loadTodayAdmin() {
       <td>${r.time}</td>
       <td><span class="badge ${cls}">${r.status}</span></td>
       <td style="max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.reason||''}">${r.reason||'-'}</td>
-      <td><button class="btn btn-sm" style="background:#e8f0fe;color:#1a73e8;white-space:nowrap" onclick="openReasonModal('${r.id}','${today}')"><i class="fas fa-edit"></i></button></td>
+      <td><button class="btn btn-sm" style="background:rgba(244,160,32,.15);color:var(--amber);white-space:nowrap" onclick="openReasonModal('${r.id}','${today}')"><i class="fas fa-edit"></i></button></td>
     </tr>`;
   });
   if(!rows.length) tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
@@ -5017,7 +5019,7 @@ function renderPublicEmpSearch() {
     const roleDisplay = role==='팀장'
       ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
       : role==='부팀장'
-      ? `<span style="font-size:11px;background:#e8f0fe;color:#1a73e8;padding:2px 8px;border-radius:8px;font-weight:700">부팀장</span>`
+      ? `<span style="font-size:11px;background:rgba(61,214,140,.15);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700">부팀장</span>`
       : role==='대명장'
       ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
       : role==='명장'
@@ -5357,27 +5359,27 @@ function renderReport() {
 
   let html = `<div class="report-header">
     <h1>${data.settings?.company||'이천물류'} 출석 현황${isIssue?' — 지각·결석':isEdu?' — 교육 명단':''}</h1>
-    <p>${periodLabel}</p>
+    <p style="font-size:13px;color:var(--text2);margin-top:4px">${periodLabel}</p>
   </div>
   <div class="report-summary">
-    <div class="report-stat"><div class="n">${totalAll}</div><div class="l">인원</div></div>
-    <div class="report-stat attend"><div class="n">${attendAll}</div><div class="l">출석</div></div>
-    <div class="report-stat late"><div class="n">${lateAll}</div><div class="l">지각</div></div>
-    <div class="report-stat absent"><div class="n">${absentAll}</div><div class="l">결석</div></div>
-    <div class="report-stat"><div class="n">${isPeriod?'-':totalAll-attendAll-lateAll-absentAll}</div><div class="l">미체크</div></div>
+    <div class="report-stat"><div class="n">${totalAll}</div>인원</div>
+    <div class="report-stat attend"><div class="n">${attendAll}</div>출석</div>
+    <div class="report-stat late"><div class="n">${lateAll}</div>지각</div>
+    <div class="report-stat absent"><div class="n">${absentAll}</div>결석</div>
+    <div class="report-stat"><div class="n">${isPeriod?'-':totalAll-attendAll-lateAll-absentAll}</div>미체크</div>
   </div>`;
 
   // ── 교육 필터 ──────────────────────────────────────────────
   if (isEdu) {
     const eduList = Array.isArray(data.eduList) ? data.eduList : [];
     if (!eduList.length) {
-      html += `<div style="text-align:center;padding:48px 20px;color:#8e44ad">
-        <i class="fas fa-graduation-cap" style="font-size:44px;display:block;margin-bottom:14px"></i>
-        <div style="font-size:16px;font-weight:700">교육 대상자 없음</div>
-        <div style="font-size:13px;margin-top:6px;color:#666">현황 탭에서 교육 명단에 직원을 추가해주세요.</div>
+      html += `<div style="text-align:center;padding:48px 20px;color:var(--text3)">
+        <i class="fas fa-graduation-cap" style="font-size:44px;display:block;margin-bottom:14px;color:#8e44ad"></i>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">교육 대상자 없음</div>
+        <div style="font-size:13px;margin-top:6px;color:var(--text3)">현황 탭에서 교육 명단에 직원을 추가해주세요.</div>
       </div>`;
     } else {
-      html += `<div style="background:#f3e5f5;border:1px solid #8e44ad;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#6c3483;font-weight:600">
+      html += `<div style="background:rgba(142,68,173,.15);border:1px solid rgba(142,68,173,.4);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#c39bd3;font-weight:600">
         <i class="fas fa-graduation-cap"></i> 교육 대상자 총 ${eduList.length}명
       </div>
       <table class="report-table">
@@ -5392,8 +5394,8 @@ function renderReport() {
         html += `<tr>
           <td>${i+1}</td><td>${emp.id||edu.id}</td>
           <td class="col-name">${edu.name}</td>
-          <td><span style="font-size:9px;background:#8e44ad;color:#fff;padding:1px 5px;border-radius:4px">${edu.team}</span></td>
-          <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+          <td><span style="font-size:9px;background:rgba(142,68,173,.25);color:#c39bd3;padding:1px 6px;border-radius:4px;border:1px solid rgba(142,68,173,.4)">${edu.team}</span></td>
+          <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
           <td>${emp.phone||'-'}</td>
           <td><span class="report-status ${cls}">${status}</span></td>
         </tr>`;
@@ -5405,13 +5407,13 @@ function renderReport() {
 
   if (isIssue) {
     if (issueCount === 0) {
-      html += `<div style="text-align:center;padding:48px 20px;color:#34a853">
-        <i class="fas fa-check-circle" style="font-size:44px;display:block;margin-bottom:14px"></i>
-        <div style="font-size:16px;font-weight:700">지각·결석 없음</div>
-        <div style="font-size:13px;margin-top:6px;color:#666">해당 기간 지각·결석 직원이 없습니다 🎉</div>
+      html += `<div style="text-align:center;padding:48px 20px;color:var(--text3)">
+        <i class="fas fa-check-circle" style="font-size:44px;display:block;margin-bottom:14px;color:var(--success)"></i>
+        <div style="font-size:15px;font-weight:700;color:var(--text)">지각·결석 없음</div>
+        <div style="font-size:13px;margin-top:6px;color:var(--text3)">해당 기간 지각·결석 직원이 없습니다 🎉</div>
       </div>`;
     } else {
-      html += `<div style="background:#fff8e1;border:1px solid #fbbc04;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#b06000;font-weight:600">
+      html += `<div style="background:rgba(244,160,32,.12);border:1px solid rgba(244,160,32,.35);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);font-weight:600">
         <i class="fas fa-exclamation-triangle"></i> 지각 ${lateAll}건 · 결석 ${absentAll}건 — 총 ${issueCount}건
       </div>
       <table class="report-table">
@@ -5426,7 +5428,7 @@ function renderReport() {
               const cls=r.status==='지각'?'late':'absent';
               html+=`<tr><td>${no++}</td><td style="white-space:nowrap">${r.date}</td><td>${emp.id}</td>
                 <td class="col-name">${emp.name}</td><td>${team}</td>
-                <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
+                <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
                 <td><span class="report-status ${cls}">${r.status}</span></td>
                 <td class="col-reason">${r.reason||'-'}</td></tr>`;
             });
@@ -5436,7 +5438,7 @@ function renderReport() {
             const cls=r.status==='지각'?'late':'absent';
             html+=`<tr><td>${no++}</td><td>${emp.id}</td>
               <td class="col-name">${emp.name}</td><td>${team}</td>
-              <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
+              <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
               <td><span class="report-status ${cls}">${r.status}</span></td>
               <td class="col-reason">${r.reason||'-'}</td></tr>`;
           }
@@ -5461,14 +5463,17 @@ function renderReport() {
       }
     });
     const tNocheck = isPeriod ? '-' : emps.length-tAttend-tLate-tAbsent;
-    html += `<div style="margin-bottom:16px">
-      <div style="display:flex;align-items:center;justify-content:space-between;background:#1a73e8;color:#fff;padding:7px 10px;border-radius:6px 6px 0 0;font-size:11px;font-weight:700">
-        <span><i class="fas fa-users" style="margin-right:5px"></i>${team} (${emps.length}명)</span>
-        <span style="display:flex;gap:8px;font-weight:400">
-          <span>출석 ${tAttend}</span><span>지각 ${tLate}</span><span>결석 ${tAbsent}</span>${!isPeriod?`<span>미체크 ${tNocheck}</span>`:''}
+    html += `<div style="margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--navy-border)">
+      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--navy-mid);border-bottom:2px solid var(--amber);color:var(--text);padding:8px 12px;font-size:11px;font-weight:700">
+        <span><i class="fas fa-users" style="color:var(--amber);margin-right:6px"></i>${team} <span style="color:var(--text3);font-weight:400">(${emps.length}명)</span></span>
+        <span style="display:flex;gap:10px;font-size:10px;font-weight:600">
+          <span style="color:var(--success)">출석 ${tAttend}</span>
+          <span style="color:var(--warning)">지각 ${tLate}</span>
+          <span style="color:var(--danger)">결석 ${tAbsent}</span>
+          ${!isPeriod?`<span style="color:var(--text3)">미체크 ${tNocheck}</span>`:''}
         </span>
       </div>
-      <table class="report-table" style="margin-bottom:0;border-radius:0 0 6px 6px;overflow:hidden">
+      <table class="report-table" style="margin-bottom:0">
         <colgroup><col style="width:5%">${isPeriod?'<col style="width:12%">':''}<col style="width:10%"><col style="width:17%"><col style="width:13%"><col style="width:9%"><col style="width:9%"><col></colgroup>
         <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
         <tbody>`;
@@ -5478,7 +5483,7 @@ function renderReport() {
         if (!empRecs.length) {
           html+=`<tr><td>${no++}</td><td colspan="2" style="color:#9aa0a6">기록없음</td>
             <td class="col-name">${emp.name}</td>
-            <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+            <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
             <td>-</td><td><span class="report-status nocheck">-</span></td><td>-</td></tr>`;
         } else {
           empRecs.forEach((r,i)=>{
@@ -5488,7 +5493,7 @@ function renderReport() {
               <td style="white-space:nowrap">${r.date}</td>
               <td>${i===0?emp.id:''}</td>
               <td class="col-name" style="font-weight:${i===0?700:400}">${i===0?emp.name:''}</td>
-              <td style="color:#1a73e8;font-weight:600">${i===0?emp.car||'-':''}</td>
+              <td style="color:var(--amber);font-weight:600">${i===0?emp.car||'-':''}</td>
               <td>${r.time}</td>
               <td><span class="report-status ${cls}">${r.status}</span></td>
               <td class="col-reason">${r.reason||'-'}</td></tr>`;
@@ -5500,7 +5505,7 @@ function renderReport() {
         const cls=status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
         html+=`<tr><td>${no++}</td><td>${emp.id}</td>
           <td class="col-name">${emp.name}</td>
-          <td style="color:#1a73e8;font-weight:600">${emp.car||'-'}</td>
+          <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
           <td>${r?r.time:'-'}</td>
           <td><span class="report-status ${cls}">${status}</span></td>
           <td class="col-reason">${r?r.reason||'-':'-'}</td></tr>`;
