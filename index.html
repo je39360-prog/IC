@@ -619,7 +619,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.39</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.40</span>
       </div>
     </div>
 
@@ -4913,25 +4913,46 @@ function loadTodayAdmin() {
   // 교육 뷰 렌더링
   renderEduView(data);
 
-  // 개인별 현황 테이블
+  // 개인별 현황 테이블 — 팀별 구분
   const tbody = document.getElementById('todayTable');
   if(!tbody) return;
   tbody.innerHTML='';
+
+  if(!rows.length){
+    tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
+    return;
+  }
+
+  // 팀별 그룹핑 (정렬 순서 유지)
+  const teamGroups={}, teamOrder=[];
   rows.forEach(r=>{
-    const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
-    const carCell=r.car?`<span style="font-size:11px;background:rgba(244,160,32,.12);color:var(--amber);padding:1px 7px;border-radius:6px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
-    tbody.innerHTML+=`<tr>
-      <td>${r.id}</td>
-      <td><strong>${r.name}</strong></td>
-      <td>${r.team}</td>
-      <td>${carCell}</td>
-      <td>${r.time}</td>
-      <td><span class="badge ${cls}">${r.status}</span></td>
-      <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text)" title="${r.reason||''}">${r.reason||'-'}</td>
-      <td><button class="btn btn-sm" style="background:rgba(244,160,32,.15);color:var(--amber);white-space:nowrap" onclick="openReasonModal('${r.id}','${today}')"><i class="fas fa-edit"></i></button></td>
-    </tr>`;
+    if(!teamGroups[r.team]){teamGroups[r.team]=[];teamOrder.push(r.team);}
+    teamGroups[r.team].push(r);
   });
-  if(!rows.length) tbody.innerHTML='<tr><td colspan="8" class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></td></tr>';
+
+  teamOrder.forEach(team=>{
+    const members=teamGroups[team];
+    const jb=team.startsWith('정빌');
+    const ac=jb?'#a78bfa':'var(--amber)';
+    const ic=jb?'fa-tools':'fa-users';
+    const ts=teamStats[team]||{attend:0,late:0,absent:0,total:0};
+    const nc=ts.total-ts.attend-ts.late-ts.absent;
+
+    // 팀 헤더 행
+    const hdr=document.createElement('tr');
+    hdr.innerHTML=`<td colspan="8" style="padding:7px 12px;background:var(--navy-mid);border-bottom:2px solid ${ac};font-size:11px;font-weight:700;color:${ac};letter-spacing:.4px"><span style="display:flex;align-items:center;justify-content:space-between"><span><i class="fas ${ic}" style="margin-right:6px"></i>${team}<span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:4px">(${members.length}명)</span></span><span style="display:flex;gap:8px;font-size:10px;font-weight:600"><span style="color:var(--success)">출석 ${ts.attend}</span><span style="color:var(--warning)">지각 ${ts.late}</span><span style="color:var(--danger)">결석 ${ts.absent}</span><span style="color:var(--text3)">미체크 ${nc}</span></span></span></td>`;
+    tbody.appendChild(hdr);
+
+    // 팀원 행
+    members.forEach(r=>{
+      const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
+      const carCell=r.car?`<span style="font-size:11px;background:rgba(244,160,32,.12);color:var(--amber);padding:1px 7px;border-radius:6px;font-weight:600"><i class="fas fa-car" style="font-size:9px"></i> ${r.car}</span>`:'<span style="color:var(--text3);font-size:11px">-</span>';
+      const row=document.createElement('tr');
+      row.id=`row-${r.id}`;
+      row.innerHTML=`<td style="font-size:11px;color:var(--text3)">${r.id}</td><td><strong>${r.name}</strong></td><td style="color:${ac};font-weight:600;font-size:11px">${r.team}</td><td>${carCell}</td><td>${r.time}</td><td><span class="badge ${cls}">${r.status}</span></td><td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--text)" title="${r.reason||''}">${r.reason||'-'}</td><td><button class="btn btn-sm" style="background:rgba(244,160,32,.15);color:var(--amber);white-space:nowrap" onclick="openReasonModal('${r.id}','${today}')"><i class="fas fa-edit"></i></button></td>`;
+      tbody.appendChild(row);
+    });
+  });
 }
 
 function renderEmployees() {
@@ -4989,8 +5010,8 @@ function renderPublicEmpSearch() {
   const data = getData();
   const search = (document.getElementById('publicEmpSearch')?.value||'').toLowerCase();
   const teamFilter = document.getElementById('publicTeamFilter')?.value || 'all';
-  
-  // 팀 필터 목록 업데이트 (중복 제거 및 정렬)
+
+  // 팀 필터 목록 업데이트
   const filterSelect = document.getElementById('publicTeamFilter');
   if (filterSelect && filterSelect.options.length <= 1) {
     const teams = [...new Set(data.employees.map(e => e.team))].filter(Boolean).sort();
@@ -5012,38 +5033,76 @@ function renderPublicEmpSearch() {
     const matchesTeam = teamFilter === 'all' || e.team === teamFilter;
     return matchesSearch && matchesTeam;
   }).sort((a,b) => {
-    // 팀별 그룹 → 팀 안에서 팀장/부팀장 우선
     if (a.team !== b.team) return (a.team||'').localeCompare(b.team||'','ko');
-    return (ROLE_ORDER[a.role||'']??2) - (ROLE_ORDER[b.role||'']??2);
+    return (ROLE_ORDER[a.role||'']??5) - (ROLE_ORDER[b.role||'']??5);
   });
 
   const tbody = document.getElementById('publicEmpTable');
-  if(!tbody) return;
-  tbody.innerHTML='';
-  filtered.forEach(emp=>{
-    const role = emp.role||'';
-    const roleDisplay = role==='팀장'
-      ? `<span style="font-size:11px;background:#fff3cd;color:#856404;padding:2px 8px;border-radius:8px;font-weight:700">팀장</span>`
-      : role==='부팀장'
-      ? `<span style="font-size:11px;background:rgba(61,214,140,.15);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700">부팀장</span>`
-      : role==='대명장'
-      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">대명장</span>`
-      : role==='명장'
-      ? `<span style="font-size:11px;background:#fce4ec;color:#c0392b;padding:2px 8px;border-radius:8px;font-weight:700">명장</span>`
-      : role==='프로'
-      ? `<span style="font-size:11px;background:#e6f4ea;color:#1e7e34;padding:2px 8px;border-radius:8px;font-weight:700">프로</span>`
-      : `<span style="color:var(--text3);font-size:11px">-</span>`;
-    const isSpecialPub = emp.team==='대명장' || emp.team==='명장';
-    const pubTeamStyle = isSpecialPub ? 'style="color:#c0392b;font-weight:800"' : '';
-    tbody.innerHTML+=`<tr>
-      <td><strong>${emp.name}</strong></td>
-      <td><span ${pubTeamStyle}>${emp.team}</span></td>
-      <td>${roleDisplay}</td>
-      <td style="color:var(--primary);font-weight:600">${emp.car||'-'}</td>
-      <td>${emp.phone ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>` : '-'}</td>
-    </tr>`;
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+    return;
+  }
+
+  // 팀별 그룹핑
+  const groups = {};
+  filtered.forEach(emp => {
+    const t = emp.team || '기타';
+    if (!groups[t]) groups[t] = [];
+    groups[t].push(emp);
   });
-  if (!filtered.length) tbody.innerHTML='<tr><td colspan="5" class="empty-state"><i class="fas fa-search"></i><p>검색 결과가 없습니다</p></td></tr>';
+
+  const isJB = t => t.startsWith('정빌');
+
+  Object.keys(groups).forEach(team => {
+    const jb = isJB(team);
+    const accentColor = jb ? '#a78bfa' : 'var(--amber)';
+    const icon        = jb ? 'fa-tools'        : 'fa-users';
+    const members     = groups[team];
+
+    // ── 팀 헤더 행 ──
+    const hdr = document.createElement('tr');
+    hdr.innerHTML = `<td colspan="5" style="
+      padding:7px 12px;
+      background:var(--navy-mid);
+      border-bottom:2px solid ${accentColor};
+      font-size:11px;font-weight:700;color:${accentColor};
+      letter-spacing:.4px;
+    ">
+      <i class="fas ${icon}" style="margin-right:6px"></i>${team}
+      <span style="color:var(--text3);font-weight:400;font-size:10px;margin-left:4px">(${members.length}명)</span>
+    </td>`;
+    tbody.appendChild(hdr);
+
+    // ── 팀원 행 ──
+    members.forEach(emp => {
+      const role = emp.role || '';
+      const roleDisplay = role === '팀장'
+        ? `<span style="font-size:10px;background:rgba(244,160,32,.18);color:var(--amber);padding:2px 6px;border-radius:6px;font-weight:700">팀장</span>`
+        : role === '부팀장'
+        ? `<span style="font-size:10px;background:rgba(61,214,140,.15);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700">부팀장</span>`
+        : role === '대명장'
+        ? `<span style="font-size:10px;background:rgba(167,139,250,.18);color:#a78bfa;padding:2px 6px;border-radius:6px;font-weight:700">대명장</span>`
+        : role === '명장'
+        ? `<span style="font-size:10px;background:rgba(167,139,250,.12);color:#a78bfa;padding:2px 6px;border-radius:6px;font-weight:700">명장</span>`
+        : role === '프로'
+        ? `<span style="font-size:10px;background:rgba(61,214,140,.12);color:var(--success);padding:2px 6px;border-radius:6px;font-weight:700">프로</span>`
+        : `<span style="color:var(--text3);font-size:10px">-</span>`;
+
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td><strong>${emp.name}</strong></td>
+        <td style="color:${accentColor};font-weight:700;font-size:11px">${team}</td>
+        <td>${roleDisplay}</td>
+        <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
+        <td>${emp.phone
+          ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>`
+          : '-'}</td>`;
+      tbody.appendChild(row);
+    });
+  });
 }
 
 async function addEmployee() {
