@@ -508,8 +508,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   /* 보고서 영역 초기화 */
   #reportContent {
     display:block !important;
-    position:absolute !important;
-    top:0 !important; left:0 !important;
+    position:static !important;
     margin:0 !important; padding:0 !important;
     box-shadow:none !important;
     border-radius:0 !important;
@@ -517,6 +516,9 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     width:100% !important;
     background:#fff !important;
   }
+  .report-summary-grid { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 5px !important; }
+  .report-summary { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 6px !important; }
+  .report-stat { width: 100% !important; }
 
   /* 보고서 헤더 */
   .report-header { margin-bottom:10px !important; padding-bottom:8px !important; }
@@ -619,7 +621,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.40</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.41</span>
       </div>
     </div>
 
@@ -5466,7 +5468,7 @@ function renderReport() {
       <div style="font-size:10px;font-weight:700;color:${color};letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:5px">
         <i class="${icon}"></i> ${label}
       </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
+      <div class="report-summary-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
         <div class="report-stat"><div class="n">${total}</div>인원</div>
         <div class="report-stat attend"><div class="n">${attend}</div>출석</div>
         <div class="report-stat late"><div class="n">${late}</div>지각</div>
