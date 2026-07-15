@@ -508,7 +508,8 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   /* 보고서 영역 초기화 */
   #reportContent {
     display:block !important;
-    position:static !important;
+    position:absolute !important;
+    top:0 !important; left:0 !important;
     margin:0 !important; padding:0 !important;
     box-shadow:none !important;
     border-radius:0 !important;
@@ -516,9 +517,6 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     width:100% !important;
     background:#fff !important;
   }
-  .report-summary-grid { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 5px !important; }
-  .report-summary { display: grid !important; grid-template-columns: repeat(5, 1fr) !important; gap: 6px !important; }
-  .report-stat { width: 100% !important; }
 
   /* 보고서 헤더 */
   .report-header { margin-bottom:10px !important; padding-bottom:8px !important; }
@@ -540,6 +538,17 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   tr { page-break-inside:avoid !important; }
   -webkit-print-color-adjust:exact;
   print-color-adjust:exact;
+
+  /* ── 그룹별 인쇄 제어 ──
+     body.print-normal  → 정빌팀 섹션·요약 숨김
+     body.print-jungbil → 가전팀 섹션·요약 숨김
+     body.print-all     → 전부 표시 (기본)          */
+  body.print-normal  [data-team-group="jungbil"] { display:none !important; }
+  body.print-normal  [data-sum-group="jungbil"]  { display:none !important; }
+  body.print-normal  [data-sum-group="all"]       { display:none !important; }
+  body.print-jungbil [data-team-group="normal"]  { display:none !important; }
+  body.print-jungbil [data-sum-group="normal"]   { display:none !important; }
+  body.print-jungbil [data-sum-group="all"]      { display:none !important; }
 }
 </style>
 </head>
@@ -621,7 +630,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.41</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.42</span>
       </div>
     </div>
 
@@ -983,7 +992,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <i class="fas fa-truck-moving"></i> 가전팀
       </button>
       <button class="btn btn-sm btn-s" onclick="printReport('jungbil')" style="flex:1;min-width:60px;color:#a78bfa;border-color:#a78bfa">
-        <i class="fas fa-tools"></i> 정빌팀
+        <i class="fas fa-tint"></i> 정빌팀
       </button>
     </div>
   </div>
@@ -4936,7 +4945,7 @@ function loadTodayAdmin() {
     const members=teamGroups[team];
     const jb=team.startsWith('정빌');
     const ac=jb?'#a78bfa':'var(--amber)';
-    const ic=jb?'fa-tools':'fa-users';
+    const ic=jb?'fa-tint':'fa-users';
     const ts=teamStats[team]||{attend:0,late:0,absent:0,total:0};
     const nc=ts.total-ts.attend-ts.late-ts.absent;
 
@@ -5061,7 +5070,7 @@ function renderPublicEmpSearch() {
   Object.keys(groups).forEach(team => {
     const jb = isJB(team);
     const accentColor = jb ? '#a78bfa' : 'var(--amber)';
-    const icon        = jb ? 'fa-tools'        : 'fa-users';
+    const icon        = jb ? 'fa-tint'        : 'fa-users';
     const members     = groups[team];
 
     // ── 팀 헤더 행 ──
@@ -5374,30 +5383,20 @@ function setReportFilter(filter) {
   renderReport();
 }
 
+// 인쇄 그룹 전역 관리
+let _printGroup = 'all';
+window.addEventListener('beforeprint', () => {
+  document.body.classList.remove('print-all','print-normal','print-jungbil');
+  document.body.classList.add('print-' + _printGroup);
+});
+window.addEventListener('afterprint', () => {
+  document.body.classList.remove('print-all','print-normal','print-jungbil');
+  _printGroup = 'all';
+});
+
 function printReport(group='all') {
-  // 인쇄 대상 그룹을 reportContent에 data 속성으로 표시 후 인쇄
-  const area = document.getElementById('reportContent');
-  if (area) area.dataset.printGroup = group;
-
-  // 인쇄 전 그룹별 섹션 가시성 제어
-  const allSections  = area ? area.querySelectorAll('[data-team-group]') : [];
-  allSections.forEach(el => {
-    const g = el.dataset.teamGroup;
-    el.style.display = (group==='all' || g===group) ? '' : 'none';
-  });
-
-  // 요약 행 가시성 제어
-  const sumNormal  = area ? area.querySelector('[data-sum-group="normal"]')  : null;
-  const sumJungbil = area ? area.querySelector('[data-sum-group="jungbil"]') : null;
-  if (sumNormal)  sumNormal.style.display  = (group==='jungbil') ? 'none' : '';
-  if (sumJungbil) sumJungbil.style.display = (group==='normal')  ? 'none' : '';
-
+  _printGroup = group;
   window.print();
-
-  // 인쇄 후 복원
-  allSections.forEach(el => { el.style.display = ''; });
-  if (sumNormal)  sumNormal.style.display  = '';
-  if (sumJungbil) sumJungbil.style.display = '';
 }
 
 function renderReport() {
@@ -5468,7 +5467,7 @@ function renderReport() {
       <div style="font-size:10px;font-weight:700;color:${color};letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:5px">
         <i class="${icon}"></i> ${label}
       </div>
-      <div class="report-summary-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
         <div class="report-stat"><div class="n">${total}</div>인원</div>
         <div class="report-stat attend"><div class="n">${attend}</div>출석</div>
         <div class="report-stat late"><div class="n">${late}</div>지각</div>
@@ -5483,9 +5482,9 @@ function renderReport() {
     <p style="font-size:13px;color:var(--text2);margin-top:4px">${periodLabel}</p>
   </div>
   ${summaryRow('가전팀', totalN, attendN, lateN, absentN, 'var(--amber)', 'fas fa-truck-moving', 'normal')}
-  ${summaryRow('정빌팀', totalJ, attendJ, lateJ, absentJ, '#a78bfa', 'fas fa-tools', 'jungbil')}
-  <div style="border-top:1px solid var(--navy-border);margin:6px 0 10px"></div>
-  <div style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:12px;font-weight:600">
+  ${summaryRow('정빌팀', totalJ, attendJ, lateJ, absentJ, '#a78bfa', 'fas fa-tint', 'jungbil')}
+  <div data-sum-group="all" style="border-top:1px solid var(--navy-border);margin:6px 0 10px"></div>
+  <div data-sum-group="all" style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:12px;font-weight:600">
     <span><i class="fas fa-sigma" style="margin-right:4px"></i>전체 합계</span>
     <span style="display:flex;gap:12px">
       <span>총 <b style="color:var(--text)">${totalAll}</b>명</span>
@@ -5593,7 +5592,7 @@ function renderReport() {
     const teamGroup = isJungbilTeam(team) ? 'jungbil' : 'normal';
     html += `<div data-team-group="${teamGroup}" style="margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--navy-border)">
       <div style="display:flex;align-items:center;justify-content:space-between;background:var(--navy-mid);border-bottom:2px solid ${teamGroup==='jungbil'?'#a78bfa':'var(--amber)'};color:var(--text);padding:8px 12px;font-size:11px;font-weight:700">
-        <span><i class="fas fa-${teamGroup==='jungbil'?'tools':'users'}" style="color:${teamGroup==='jungbil'?'#a78bfa':'var(--amber)'};margin-right:6px"></i>${team} <span style="color:var(--text3);font-weight:400">(${emps.length}명)</span></span>
+        <span><i class="fas fa-${teamGroup==='jungbil'?'tint':'users'}" style="color:${teamGroup==='jungbil'?'#a78bfa':'var(--amber)'};margin-right:6px"></i>${team} <span style="color:var(--text3);font-weight:400">(${emps.length}명)</span></span>
         <span style="display:flex;gap:10px;font-size:10px;font-weight:600">
           <span style="color:var(--success)">출석 ${tAttend}</span>
           <span style="color:var(--warning)">지각 ${tLate}</span>
