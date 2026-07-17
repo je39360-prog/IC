@@ -470,6 +470,38 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 
 /* 의석 뷰 */
 .seat-team-block{margin-bottom:16px}
+/* 시트 컨텍스트 메뉴 */
+#seatCtxMenu{
+  position:fixed;z-index:9999;
+  background:var(--navy-light);
+  border:1px solid var(--navy-border);
+  border-radius:12px;
+  box-shadow:0 12px 40px rgba(0,0,0,.55);
+  padding:8px;
+  min-width:180px;
+  animation:scaleIn .15s ease;
+  display:none;
+}
+#seatCtxMenu .ctx-header{
+  padding:8px 10px 6px;
+  font-size:12px;font-weight:700;color:var(--text);
+  border-bottom:1px solid var(--navy-border);
+  margin-bottom:4px;
+}
+#seatCtxMenu .ctx-header small{
+  display:block;font-size:10px;color:var(--text3);font-weight:400;margin-top:2px;
+}
+#seatCtxMenu .ctx-item{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 12px;border-radius:8px;
+  font-size:13px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:background .15s;border:none;background:none;width:100%;text-align:left;
+}
+#seatCtxMenu .ctx-item:hover{background:var(--amber-glow)}
+#seatCtxMenu .ctx-item i{width:16px;text-align:center}
+#seatCtxMenu .ctx-item.danger{color:var(--danger)}
+#seatCtxMenu .ctx-item.danger:hover{background:rgba(255,107,107,.12)}
+#seatCtxMenu .ctx-divider{height:1px;background:var(--navy-border);margin:4px 0}
 .seat-team-title{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:8px}
 .seat-team-title .seat-team-badges{display:flex;gap:4px;font-weight:400}
 .seat-grid{display:flex;flex-wrap:wrap;gap:6px;min-height:60px;border-radius:8px;transition:background .15s,box-shadow .15s;padding:4px}
@@ -554,6 +586,26 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 </head>
 <body>
 
+<!-- 시트 컨텍스트 메뉴 -->
+<div id="seatCtxMenu">
+  <div class="ctx-header">
+    <span id="ctxEmpName">직원명</span>
+    <small id="ctxEmpInfo"></small>
+  </div>
+  <button class="ctx-item" onclick="ctxMoveTeam()">
+    <i class="fas fa-exchange-alt" style="color:var(--amber)"></i> 팀 위치 이동
+  </button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item" onclick="ctxToggleEdu()">
+    <i class="fas fa-graduation-cap" style="color:#a78bfa"></i>
+    <span id="ctxEduLabel">교육 명단 추가</span>
+  </button>
+  <div class="ctx-divider"></div>
+  <button class="ctx-item" onclick="closeCtxMenu()" style="color:var(--text3);font-size:12px">
+    <i class="fas fa-times"></i> 닫기
+  </button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <nav class="nav" id="mainNav">
@@ -630,7 +682,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.42</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.43</span>
       </div>
     </div>
 
@@ -4542,6 +4594,204 @@ function switchAdminTab(btn, tab) {
 // ============================================================
 let draggedEmpId = null, draggedEmpName = null;
 
+// ── 시트 컨텍스트 메뉴 ──────────────────────────────────
+let _ctxEmpId = null;
+
+function seatClick(e, empId) {
+  e.stopPropagation();
+  const data = getData();
+  const emp = data.employees.find(x => x.id === empId);
+  if (!emp) return;
+
+  _ctxEmpId = empId;
+
+  // 교육 여부 확인
+  const inEdu = Array.isArray(data.eduList) && data.eduList.some(x => x.id === empId);
+  document.getElementById('ctxEduLabel').textContent = inEdu ? '교육 명단 제거' : '교육 명단 추가';
+
+  // 직원 정보 표시
+  document.getElementById('ctxEmpName').textContent = emp.name;
+  document.getElementById('ctxEmpInfo').textContent =
+    `${emp.team}${emp.role ? ' · ' + emp.role : ''}${emp.car ? ' · ' + emp.car : ''}`;
+
+  // 메뉴 위치 (화면 밖 방지)
+  const menu = document.getElementById('seatCtxMenu');
+  menu.style.display = 'block';
+  const mw = menu.offsetWidth, mh = menu.offsetHeight;
+  let x = e.clientX + 8, y = e.clientY + 8;
+  if (x + mw > window.innerWidth  - 8) x = e.clientX - mw - 8;
+  if (y + mh > window.innerHeight - 8) y = e.clientY - mh - 8;
+  menu.style.left = x + 'px';
+  menu.style.top  = y + 'px';
+
+  highlightTodayRow(empId);
+}
+
+function closeCtxMenu() {
+  const m = document.getElementById('seatCtxMenu');
+  if (m) m.style.display = 'none';
+  _ctxEmpId = null;
+}
+
+document.addEventListener('click', e => {
+  const menu = document.getElementById('seatCtxMenu');
+  if (menu && menu.style.display !== 'none' && !menu.contains(e.target)) closeCtxMenu();
+});
+
+// 팀 이동 모달
+function ctxMoveTeam() {
+  if (!_ctxEmpId) return;
+  closeCtxMenu();
+  const data = getData();
+  const emp = data.employees.find(x => x.id === _ctxEmpId);
+  if (!emp) return;
+
+  const teams = [...new Set(data.employees.filter(e => e.active !== false).map(e => e.team))]
+    .sort((a, b) => a.localeCompare(b, 'ko'));
+
+  const overlay = document.createElement('div');
+  overlay.className = 'ctx-overlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px';
+
+  function buildModal(selectedTeam) {
+    const isJB = t => t.startsWith('정빌');
+    const teamMembers = data.employees
+      .filter(e => e.active !== false && e.team === selectedTeam && e.id !== emp.id)
+      .sort((a, b) => (a.order||0) - (b.order||0));
+
+    // 팀 버튼 목록
+    let teamBtns = '';
+    teams.forEach(t => {
+      const jb = isJB(t);
+      const sel = t === selectedTeam;
+      const border = sel ? (jb ? '#a78bfa' : 'var(--amber)') : 'var(--navy-border)';
+      const bg     = sel ? (jb ? 'rgba(167,139,250,.15)' : 'var(--amber-glow)') : 'var(--navy-mid)';
+      const color  = sel ? (jb ? '#a78bfa' : 'var(--amber)') : 'var(--text)';
+      const fw     = sel ? '700' : '500';
+      const label  = t + (sel ? ' ✓' : '');
+      teamBtns += '<button data-team="' + t + '" class="ctx-team-btn"'
+        + ' style="padding:8px 6px;border-radius:8px;border:1.5px solid ' + border + ';'
+        + 'background:' + bg + ';color:' + color + ';'
+        + 'font-size:11px;font-weight:' + fw + ';cursor:pointer;text-align:center;width:100%">'
+        + label + '</button>';
+    });
+
+    // 위치 선택
+    let posHtml = '';
+    if (teamMembers.length === 0) {
+      posHtml = '<div style="font-size:12px;color:var(--text3);padding:6px 0">첫 번째로 배치됩니다</div>';
+    } else {
+      posHtml = '<select id="ctxPosSelect" style="width:100%;padding:8px 10px;border-radius:8px;border:1.5px solid var(--navy-border);background:var(--navy-mid);color:var(--text);font-size:13px">'
+        + '<option value="first">맨 앞</option>';
+      teamMembers.forEach((m, i) => {
+        posHtml += '<option value="' + (i+1) + '">' + m.name + ' 다음</option>';
+      });
+      posHtml += '<option value="last" selected>맨 뒤</option></select>';
+    }
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background:var(--navy-light);border:1px solid var(--navy-border);border-radius:16px;padding:20px;width:100%;max-width:340px;box-shadow:var(--shadow-lg);max-height:90vh;overflow-y:auto';
+    box.innerHTML = ''
+      + '<div style="font-size:15px;font-weight:700;margin-bottom:4px">'
+      + '<i class="fas fa-exchange-alt" style="color:var(--amber);margin-right:8px"></i>팀 이동</div>'
+      + '<div style="font-size:12px;color:var(--text3);margin-bottom:14px">'
+      + emp.name + ' · 현재: <b style="color:var(--amber)">' + emp.team + '</b></div>'
+      + '<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:6px">이동할 팀 선택</div>'
+      + '<div id="ctx-team-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:200px;overflow-y:auto;margin-bottom:14px">'
+      + teamBtns + '</div>'
+      + '<div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:6px">팀 내 위치</div>'
+      + '<div id="ctx-pos-wrap">' + posHtml + '</div>'
+      + '<div style="display:flex;gap:8px;margin-top:16px">'
+      + '<button id="ctx-cancel-btn" class="btn btn-s" style="flex:1;font-size:13px">취소</button>'
+      + '<button id="ctx-move-btn" class="btn btn-p" style="flex:1;font-size:13px">이동</button>'
+      + '</div>';
+
+    // 이전 박스 교체
+    while (overlay.firstChild) overlay.removeChild(overlay.firstChild);
+    overlay.appendChild(box);
+
+    // 이벤트 — 팀 버튼
+    box.querySelectorAll('.ctx-team-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        buildModal(btn.dataset.team);
+      });
+    });
+    // 취소
+    box.querySelector('#ctx-cancel-btn').addEventListener('click', () => overlay.remove());
+    // 이동
+    box.querySelector('#ctx-move-btn').addEventListener('click', () => doMoveTeam(emp.id, selectedTeam));
+  }
+
+  buildModal(emp.team);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  document.body.appendChild(overlay);
+}
+
+async function doMoveTeam(empId, newTeam) {
+  const data = getData();
+  const emp = data.employees.find(x => x.id === empId);
+  if (!emp) return;
+
+  const posSelect = document.getElementById('ctxPosSelect');
+  const posVal = posSelect ? posSelect.value : 'last';
+
+  // 팀 변경
+  emp.team = newTeam;
+
+  // 오늘 기록 팀명 동기화 (seatDrop과 동일)
+  const today = getToday();
+  data.records.forEach(r => {
+    if (r.empId === empId && r.date === today) r.team = newTeam;
+  });
+
+  // 위치(order) 재배치
+  let teamEmps = data.employees
+    .filter(e => e.active !== false && e.team === newTeam && e.id !== empId)
+    .sort((a, b) => (a.order||0) - (b.order||0));
+
+  if (posVal === 'first') {
+    teamEmps.unshift(emp);
+  } else if (posVal === 'last' || !posVal) {
+    teamEmps.push(emp);
+  } else {
+    const idx = parseInt(posVal);
+    teamEmps.splice(idx, 0, emp);
+  }
+
+  teamEmps.forEach((e, i) => { e.order = i; });
+
+  const overlay = document.querySelector('.ctx-overlay');
+  if (overlay) overlay.remove();
+
+  await saveData(data);
+  toast(`${emp.name}님 → ${newTeam}으로 이동`);
+  loadTodayAdmin();
+}
+
+// 교육 명단 토글
+async function ctxToggleEdu() {
+  if (!_ctxEmpId) return;
+  const empId = _ctxEmpId;
+  const adding = document.getElementById('ctxEduLabel').textContent === '교육 명단 추가';
+  closeCtxMenu();
+
+  const data = getData();
+  if (!Array.isArray(data.eduList)) data.eduList = [];
+
+  if (adding) {
+    const emp = data.employees.find(x => x.id === empId);
+    if (!emp) return;
+    if (data.eduList.find(x => x.id === empId)) { toast(`${emp.name}님은 이미 교육 명단에 있습니다.`); return; }
+    data.eduList.push({ id: emp.id, name: emp.name, team: emp.team });
+    await saveData(data);
+    renderEduView(data);
+    toast(`${emp.name}님(${emp.team})이 교육 명단에 추가되었습니다.`);
+  } else {
+    await removeFromEdu(empId);
+  }
+}
+
 function seatDragStart(e) {
   draggedEmpId = e.currentTarget.dataset.empid;
   draggedEmpName = e.currentTarget.dataset.empname;
@@ -4908,7 +5158,7 @@ function loadTodayAdmin() {
           ondragstart="seatDragStart(event)"
           ondragover="seatDragOverItem(event)"
           ondragend="seatDragEnd(event)"
-          onclick="highlightTodayRow('${emp.id}')">
+          onclick="seatClick(event,'${emp.id}')">
           <span class="seat-icon">${icon}</span>
           <span class="seat-name">${emp.name}</span>
         </div>`;
@@ -5505,8 +5755,26 @@ function renderReport() {
         <div style="font-size:13px;margin-top:6px;color:var(--text3)">현황 탭에서 교육 명단에 직원을 추가해주세요.</div>
       </div>`;
     } else {
-      html += `<div style="background:rgba(142,68,173,.15);border:1px solid rgba(142,68,173,.4);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#c39bd3;font-weight:600">
-        <i class="fas fa-graduation-cap"></i> 교육 대상자 총 ${eduList.length}명
+      const eduNormal = eduList.filter(e => !isJungbilTeam(e.team)).length;
+      const eduJungbil = eduList.filter(e => isJungbilTeam(e.team)).length;
+      html += `<div style="background:rgba(142,68,173,.15);border:1px solid rgba(142,68,173,.4);border-radius:10px;padding:12px 16px;margin-bottom:14px">
+        <div style="font-size:11px;font-weight:700;color:#c39bd3;margin-bottom:10px;letter-spacing:.4px">
+          <i class="fas fa-graduation-cap" style="margin-right:6px"></i>교육 참석 인원 — 총 ${eduList.length}명
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:rgba(244,160,32,.12);border:1px solid rgba(244,160,32,.3);border-radius:8px;padding:10px 14px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:var(--amber);font-variant-numeric:tabular-nums">${eduNormal}</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:600;margin-top:2px;letter-spacing:.4px">
+              <i class="fas fa-users" style="margin-right:4px"></i>가전팀
+            </div>
+          </div>
+          <div style="background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);border-radius:8px;padding:10px 14px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:#a78bfa;font-variant-numeric:tabular-nums">${eduJungbil}</div>
+            <div style="font-size:10px;color:var(--text3);font-weight:600;margin-top:2px;letter-spacing:.4px">
+              <i class="fas fa-tint" style="margin-right:4px"></i>정빌팀
+            </div>
+          </div>
+        </div>
       </div>
       <table class="report-table">
         ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
@@ -6275,6 +6543,7 @@ Object.assign(window,{
   printDailyQR,printReport,qrLock,qrUnlock,regenQR,
   renderReport,renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
   setDateMode,setReportFilter,
+  seatClick,closeCtxMenu,doMoveTeam,ctxMoveTeam,ctxToggleEdu,
   seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDragOverItem,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner,
   vcInit,vcSetResult,vcSearchEmp,vcPickEmp,vcSave,vcResetForm,vcRenderList,vcLoad,vcDelete,vcPrint,vcOnDayChange,vcUnlockList,vcToggleAdminAuth,vcLockList,vcPrintRecord,vcSendRecord,vcExportPDF,vcSendEmail,openModal,closeModal,vcClearSign
