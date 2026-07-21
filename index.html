@@ -682,7 +682,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.45</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.46</span>
       </div>
     </div>
 
@@ -6357,6 +6357,7 @@ function vcRenderList() {
         <div>
           <strong style="font-size:14px">${v.empName}</strong>
           <span style="font-size:12px;color:var(--text2);margin-left:6px">${v.carNumber||'-'}</span>
+          ${v.company ? `<span style="font-size:12px;color:var(--text3);margin-left:6px">· ${v.company}</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
           ${statusBadge}
@@ -6365,7 +6366,7 @@ function vcRenderList() {
           ${adminBtns}
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'}) · ${v.company||''}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'})</div>
     </div>`;
   }).join('');
 }
