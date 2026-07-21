@@ -391,7 +391,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   .card-title{font-size:14px}
 
   /* 테이블 - 스크롤 가능하게 */
-  .table-wrap{max-height:320px}
+  .table-wrap{max-height:520px}
   table{font-size:12px}
   th,td{padding:6px 6px}
 
@@ -634,8 +634,8 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         </select>
       </div>
     </div>
-    <div class="table-wrap">
-      <table>
+    <div class="table-wrap" style="max-height:600px">
+      <table style="font-size:14px">
         <thead>
           <tr>
             <th>프로</th>
@@ -682,7 +682,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.44</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.45</span>
       </div>
     </div>
 
@@ -5333,12 +5333,12 @@ function renderPublicEmpSearch() {
 
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><strong>${emp.name}</strong></td>
+        <td><strong style="font-size:15px">${emp.name}</strong></td>
         <td style="color:${accentColor};font-weight:700;font-size:11px">${team}</td>
         <td>${roleDisplay}</td>
         <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
         <td>${emp.phone
-          ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>`
+          ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600;font-size:14px"><i class="fas fa-phone-alt" style="font-size:12px;margin-right:4px"></i>${emp.phone}</a>`
           : '-'}</td>`;
       tbody.appendChild(row);
     });
@@ -6314,6 +6314,31 @@ function vcRenderList() {
     const dayResults = v.dayResults || {};
     const days = Object.keys(dayResults).sort((a,b)=>(+a)-(+b));
     const badCount = days.reduce((sum,d)=> sum + Object.values(dayResults[d]||{}).filter(r=>r==='X').length, 0);
+
+    // 누락 날짜 계산 — 해당 월 1일~말일 중 미입력 날짜
+    let missingCount = 0;
+    if (v.yearMonth) {
+      const [y, m] = v.yearMonth.split('-').map(Number);
+      const totalDays = new Date(y, m, 0).getDate(); // 해당 월 마지막 날
+      const today = new Date();
+      // 현재 월이면 오늘까지만, 지난 달이면 말일까지
+      const isCurrentMonth = (today.getFullYear() === y && today.getMonth() + 1 === m);
+      const checkUntil = isCurrentMonth ? today.getDate() : totalDays;
+      const inputDays = new Set(days.map(Number));
+      for (let d = 1; d <= checkUntil; d++) {
+        if (!inputDays.has(d)) missingCount++;
+      }
+    }
+
+    // 상태 배지
+    let statusBadge = '';
+    if (missingCount > 0) {
+      statusBadge = `<span style="font-size:10px;background:rgba(255,107,107,.18);color:#FF6B6B;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(255,107,107,.35)">누락 ${missingCount}일</span>`;
+    } else if (badCount > 0) {
+      statusBadge = `<span style="font-size:10px;background:rgba(244,160,32,.18);color:#F4A020;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(244,160,32,.35)">불량 ${badCount}</span>`;
+    } else {
+      statusBadge = `<span style="font-size:10px;background:rgba(61,214,140,.15);color:#3DD68C;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(61,214,140,.3)">양호</span>`;
+    }
     
     // 관리자 버튼 구성 (인증 시에만 노출)
     let adminBtns = '';
@@ -6334,7 +6359,7 @@ function vcRenderList() {
           <span style="font-size:12px;color:var(--text2);margin-left:6px">${v.carNumber||'-'}</span>
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          ${badCount > 0 ? `<span style="font-size:10px;background:#fce8e6;color:#c5221f;padding:2px 7px;border-radius:8px;font-weight:700">불량 ${badCount}</span>` : `<span style="font-size:10px;background:#e6f4ea;color:#1e7e34;padding:2px 7px;border-radius:8px;font-weight:700">양호</span>`}
+          ${statusBadge}
           <button class="btn btn-sm btn-p" onclick="event.stopPropagation();vcPrintRecord('${v.id}')" title="인쇄"><i class="fas fa-print"></i></button>
           <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcSendRecord('${v.id}')" title="보내기"><i class="fas fa-share-square"></i></button>
           ${adminBtns}
