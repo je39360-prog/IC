@@ -391,7 +391,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   .card-title{font-size:14px}
 
   /* 테이블 - 스크롤 가능하게 */
-  .table-wrap{max-height:520px}
+  .table-wrap{max-height:320px}
   table{font-size:12px}
   th,td{padding:6px 6px}
 
@@ -522,7 +522,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
 .seat.absent {background:rgba(255,107,107,.13);border-color:var(--danger);color:var(--danger)}
 .seat.nocheck{background:var(--navy-mid);border-color:var(--navy-border);color:var(--text3)}
 .seat .seat-icon{font-size:18px;line-height:1}
-.seat .seat-name{font-size:11px;font-weight:700;color:#EEF3F8;text-align:center;line-height:1.2;max-width:52px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.seat .seat-name{font-size:9px;text-align:center;line-height:1.2;max-width:42px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seat-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:10px;font-size:11px;align-items:center}
 .seat-legend-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:3px}
 
@@ -530,8 +530,6 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   @page { size:A4; margin:10mm 12mm; }
 
   /* 보고서 탭 외 모든 요소 숨김 */
-  body > *:not(#tab-report) { display:none !important; }
-  #tab-report { display:block !important; padding:0 !important; margin:0 !important; }
 
   /* 불필요한 UI 제거 */
   .nav, .filter-bar, .btn-checkin, .scanner-wrap,
@@ -613,7 +611,6 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   <button class="nav-btn" data-tab="empsearch"><i class="fas fa-search"></i><span> 직원조회</span></button>
   <button class="nav-btn" data-tab="vehiclecheck"><i class="fas fa-truck-pickup"></i><span> 차량점검</span></button>
   <button class="nav-btn" data-tab="admin"><i class="fas fa-cog"></i><span> 관리자</span></button>
-  <button class="nav-btn" data-tab="report"><i class="fas fa-file-alt"></i><span> 보고서</span></button>
   <button class="nav-btn" data-tab="qrprint"><i class="fas fa-qrcode"></i><span> QR출력</span></button>
 </nav>
 
@@ -634,8 +631,8 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         </select>
       </div>
     </div>
-    <div class="table-wrap" style="max-height:600px">
-      <table style="font-size:14px">
+    <div class="table-wrap">
+      <table>
         <thead>
           <tr>
             <th>프로</th>
@@ -682,7 +679,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.48</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.49</span>
       </div>
     </div>
 
@@ -757,7 +754,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     <div id="vcSignSection" style="margin-top:16px;border-top:1.5px dashed var(--border);padding-top:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--primary)"><i class="fas fa-pen-nib"></i> 점검자 확인(서명)</div>
       <div style="background:var(--border-light);border-radius:var(--radius);padding:10px;text-align:center">
-        <canvas id="vcSignCanvas" width="300" height="120" style="background:#ffffff;border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
+        <canvas id="vcSignCanvas" width="300" height="120" style="background:var(--navy-mid);border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
         <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
           <button class="btn btn-sm btn-s" onclick="vcClearSign()"><i class="fas fa-eraser"></i> 지우기</button>
         </div>
@@ -829,7 +826,14 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   <div id="adminPanel" class="hide">
     <div class="card" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding:12px 16px">
       <h2 style="font-size:16px;display:flex;align-items:center;gap:6px"><i class="fas fa-cog" style="color:var(--primary)"></i> 관리자 페이지</h2>
-      <div style="display:flex;gap:6px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:6px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:10px;padding:5px 10px">
+          <i class="fas fa-calendar-day" style="color:var(--amber);font-size:13px"></i>
+          <input type="date" id="adminViewDate"
+            style="background:transparent;border:none;color:var(--text);font-size:13px;font-weight:600;width:130px;cursor:pointer">
+          <button id="adminDateTodayBtn" title="오늘로 이동"
+            style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:11px;padding:0;font-weight:600">오늘</button>
+        </div>
         <button class="btn btn-sm btn-s" onclick="exportCSV()"><i class="fas fa-download"></i> CSV 내보내기</button>
         <button class="btn btn-sm btn-danger" onclick="adminLogout()"><i class="fas fa-sign-out-alt"></i> 로그아웃</button>
       </div>
@@ -1004,67 +1008,6 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
           </p>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============== 보고서 탭 ============== -->
-<div class="page" id="tab-report">
-  <div class="card" style="padding:12px 16px">
-    <!-- 날짜 모드 토글 -->
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <button id="dateModeDay" class="btn btn-sm btn-p" style="flex:1" onclick="setDateMode('day')">
-        <i class="fas fa-calendar-day"></i> 단일 날짜
-      </button>
-      <button id="dateModePeriod" class="btn btn-sm btn-s" style="flex:1" onclick="setDateMode('period')">
-        <i class="fas fa-calendar-week"></i> 기간 조회
-      </button>
-    </div>
-    <!-- 단일 날짜 -->
-    <div id="dateInputDay" class="filter-bar">
-      <label><i class="far fa-calendar-alt"></i> 날짜:</label>
-      <input type="date" id="reportDate">
-      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 조회</button>
-    </div>
-    <!-- 기간 조회 -->
-    <div id="dateInputPeriod" class="filter-bar hide">
-      <label><i class="far fa-calendar-alt"></i> 시작:</label>
-      <input type="date" id="reportStart">
-      <label>종료:</label>
-      <input type="date" id="reportEnd">
-      <button class="btn btn-sm btn-p" onclick="renderReport()"><i class="fas fa-sync"></i> 조회</button>
-    </div>
-    <!-- 필터 탭 -->
-    <div class="report-btn-group" style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
-      <button id="filterAll" class="btn btn-sm btn-p" onclick="setReportFilter('all')" style="flex:1;min-width:60px">
-        <i class="fas fa-list"></i> 전체
-      </button>
-      <button id="filterIssue" class="btn btn-sm btn-s" onclick="setReportFilter('issue')" style="flex:1;min-width:70px">
-        <i class="fas fa-exclamation-triangle"></i> 지각·결석
-      </button>
-      <button id="filterEdu" class="btn btn-sm btn-s" onclick="setReportFilter('edu')" style="flex:1;min-width:60px">
-        <i class="fas fa-graduation-cap"></i> 교육
-      </button>
-      <button class="btn btn-sm btn-s" onclick="printReport('all')" style="flex:1;min-width:60px">
-        <i class="fas fa-print"></i> 전체인쇄
-      </button>
-      <button class="btn btn-sm btn-s" onclick="printReport('normal')" style="flex:1;min-width:60px;color:var(--amber);border-color:var(--amber)">
-        <i class="fas fa-truck-moving"></i> 가전팀
-      </button>
-      <button class="btn btn-sm btn-s" onclick="printReport('jungbil')" style="flex:1;min-width:60px;color:#a78bfa;border-color:#a78bfa">
-        <i class="fas fa-tint"></i> 정빌팀
-      </button>
-    </div>
-  </div>
-
-  <div class="card hide-print" style="text-align:center;padding:10px 12px">
-    <p style="color:var(--text2);font-size:12px"><i class="fas fa-info-circle"></i> 보고서는 인쇄하여 A4 용지로 출력할 수 있습니다.</p>
-  </div>
-
-  <div id="reportContent" class="report-wrap" style="background:var(--navy-light);border-radius:var(--radius-lg);box-shadow:var(--shadow)">
-    <div style="text-align:center;padding:60px 20px;color:var(--text3)">
-      <i class="fas fa-file-alt" style="font-size:48px;margin-bottom:12px;display:block"></i>
-      <p>보고서를 생성하려면 날짜를 선택하고 새로고침 버튼을 눌러주세요.</p>
     </div>
   </div>
 </div>
@@ -4100,7 +4043,6 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById('tab-' + this.dataset.tab).classList.add('active');
       if (this.dataset.tab === 'admin' && !document.getElementById('adminPanel').classList.contains('hide')) loadTodayAdmin();
-      if (this.dataset.tab === 'report') renderReport();
       if (this.dataset.tab === 'qrprint') renderQRGrid();
       if (this.dataset.tab === 'empsearch') renderPublicEmpSearch();
       if (this.dataset.tab === 'vehiclecheck') {
@@ -4120,10 +4062,20 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('manualToken').addEventListener('keypress', e => { if(e.key==='Enter') manualCheckin(); });
   document.getElementById('carModal').addEventListener('click', function(e) { if(e.target===this) closeCarModal(); });
   document.getElementById('reasonModal').addEventListener('click', function(e) { if(e.target===this) closeReasonModal(); });
+  // 관리자 날짜 picker
+  const adminDateInput = document.getElementById('adminViewDate');
+  const adminDateTodayBtn = document.getElementById('adminDateTodayBtn');
+  if (adminDateInput) {
+    adminDateInput.value = getToday();
+    adminDateInput.addEventListener('change', () => loadTodayAdmin());
+  }
+  if (adminDateTodayBtn) {
+    adminDateTodayBtn.addEventListener('click', () => {
+      if (adminDateInput) adminDateInput.value = getToday();
+      loadTodayAdmin();
+    });
+  }
   setInterval(updateClock, 1000); updateClock();
-  document.getElementById('reportDate').value = getToday();
-  document.getElementById('reportStart').value = getToday();
-  document.getElementById('reportEnd').value   = getToday();
 
   // URL 파라미터 처리 (QR 스캔)
   const params = new URLSearchParams(window.location.search);
@@ -4158,58 +4110,17 @@ function updateClock() {
 // ============================================================
 // QR SCANNER
 // ============================================================
-
-// ── 위치 설정 (중부대로 743, 이천시) ──
-const OFFICE_LAT  = 37.2724;   // 위도
-const OFFICE_LNG  = 127.4345;  // 경도
-const OFFICE_RADIUS_M = 300;   // 허용 반경 (미터)
-
-function gpsDistance(lat1, lng1, lat2, lng2) {
-  const R = 6371000;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
 let scanning=false, scanStream=null, scanInterval=null;
 
 function toggleScanner() {
   if (scanning) { stopScanner(); return; }
   if (!navigator.mediaDevices?.getUserMedia) { toast('카메라를 지원하지 않거나 HTTPS가 필요합니다.'); return; }
-
-  if (!navigator.geolocation) {
-    toast('GPS를 지원하지 않는 기기입니다.');
-    return;
-  }
-
-  toast('📍 위치 확인 중...');
-  navigator.geolocation.getCurrentPosition(
-    pos => {
-      const dist = gpsDistance(pos.coords.latitude, pos.coords.longitude, OFFICE_LAT, OFFICE_LNG);
-      if (dist > OFFICE_RADIUS_M) {
-        toast(`⛔ 출석 위치가 아닙니다. (현재 위치 ${Math.round(dist)}m 이탈)`);
-        return;
-      }
-      // 위치 확인 완료 — 카메라 시작
-      const wrap = document.getElementById('scannerWrap');
-      const btn  = document.getElementById('scanToggle');
-      wrap.style.display = 'block';
-      btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
-      scanning = true;
-      tryCam('environment');
-    },
-    err => {
-      const msgs = {
-        1: '위치 권한이 거부되었습니다. 설정에서 허용해주세요.',
-        2: 'GPS 신호를 받을 수 없습니다.',
-        3: '위치 확인 시간이 초과되었습니다.'
-      };
-      toast(msgs[err.code] || 'GPS 오류가 발생했습니다.');
-    },
-    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
-  );
+  const wrap = document.getElementById('scannerWrap');
+  const btn  = document.getElementById('scanToggle');
+  wrap.style.display = 'block';
+  btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
+  scanning = true;
+  tryCam('environment');
 
   function tryCam(facing) {
     const c = { audio:false, video:{ width:{ideal:640}, height:{ideal:480} } };
@@ -4971,7 +4882,7 @@ async function eduDrop(e) {
     return;
   }
 
-  data.eduList.push({ id: emp.id, name: emp.name, team: emp.team, date: getToday() });
+  data.eduList.push({ id: emp.id, name: emp.name, team: emp.team });
   await saveData(data);
   renderEduView(data);
   toast(`${emp.name}님(${emp.team})이 교육 명단에 추가되었습니다.`);
@@ -4992,16 +4903,6 @@ function renderEduView(data) {
   const countEl = document.getElementById('eduCount');
   const emptyEl = document.getElementById('eduEmpty');
   if (!wrap) return;
-
-  // 날짜 자동 리셋: 오늘 날짜가 아닌 항목 제거
-  if (Array.isArray(data.eduList) && data.eduList.length > 0) {
-    const today = getToday();
-    const filtered = data.eduList.filter(x => x.date === today);
-    if (filtered.length !== data.eduList.length) {
-      data.eduList = filtered;
-      saveData(data);
-    }
-  }
 
   const list = Array.isArray(data.eduList) ? data.eduList : [];
   if (countEl) countEl.textContent = list.length + '명';
@@ -5059,10 +4960,23 @@ function highlightTodayRow(empId) {
   }
 }
 
+function onAdminDateChange(resetToday) {
+  const input = document.getElementById('adminViewDate');
+  if (!input) return;
+  if (resetToday) input.value = getToday();
+  loadTodayAdmin();
+}
 function loadTodayAdmin() {
-  const data = getData(), today = getToday();
+  const data = getData();
+  const dateInput = document.getElementById('adminViewDate');
+  const today = getToday();
+  // 날짜 picker 초기화 (최초 실행 시 오늘 날짜 세팅)
+  if (dateInput && !dateInput.value) dateInput.value = today;
+  const viewDate = (dateInput && dateInput.value) ? dateInput.value : today;
+  const isToday = (viewDate === today);
+
   const todayRecords = {};
-  data.records.filter(r=>r.date===today).forEach(r=>{ todayRecords[r.empId]=r; });
+  data.records.filter(r=>r.date===viewDate).forEach(r=>{ todayRecords[r.empId]=r; });
   let attend=0, late=0, absent=0, rows=[];
   const teamStats={};
   data.employees.filter(e=>e.active!==false).forEach(emp=>{
@@ -5092,6 +5006,12 @@ function loadTodayAdmin() {
   // 요약 카드
   const sumDiv = document.getElementById('todaySummary');
   if(sumDiv) sumDiv.innerHTML = `
+    <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+      <span style="font-size:13px;font-weight:700;color:var(--amber)">
+        <i class="fas fa-calendar-check" style="margin-right:6px"></i>${viewDate} (${getDayName(viewDate)})
+      </span>
+      ${!isToday ? `<span style="font-size:11px;background:rgba(244,160,32,.15);color:var(--amber);padding:3px 8px;border-radius:6px;font-weight:600"><i class="fas fa-history" style="margin-right:4px"></i>과거 날짜 조회</span>` : ''}
+    </div>
     <div class="stat-card"><div class="stat-num">${total}</div><div class="stat-label">전체</div></div>
     <div class="stat-card attend"><div class="stat-num">${attend}</div><div class="stat-label">출석</div></div>
     <div class="stat-card late"><div class="stat-num">${late}</div><div class="stat-label">지각</div></div>
@@ -5374,12 +5294,12 @@ function renderPublicEmpSearch() {
 
       const row = document.createElement('tr');
       row.innerHTML = `
-        <td><strong style="font-size:15px">${emp.name}</strong></td>
+        <td><strong>${emp.name}</strong></td>
         <td style="color:${accentColor};font-weight:700;font-size:11px">${team}</td>
         <td>${roleDisplay}</td>
         <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
         <td>${emp.phone
-          ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600;font-size:14px"><i class="fas fa-phone-alt" style="font-size:12px;margin-right:4px"></i>${emp.phone}</a>`
+          ? `<a href="tel:${emp.phone}" style="color:var(--primary);text-decoration:none;font-weight:600"><i class="fas fa-phone-alt" style="font-size:11px;margin-right:4px"></i>${emp.phone}</a>`
           : '-'}</td>`;
       tbody.appendChild(row);
     });
@@ -5650,287 +5570,8 @@ function setDateMode(mode) {
   document.getElementById('dateModePeriod').className = 'btn btn-sm ' + (mode==='period'?'btn-p':'btn-s');
   document.getElementById('dateInputDay').classList.toggle('hide',    mode!=='day');
   document.getElementById('dateInputPeriod').classList.toggle('hide', mode!=='period');
-  renderReport();
 }
 
-const isJungbilTeam = team => team.startsWith('정빌');
-let reportFilter = 'all';
-
-function setReportFilter(filter) {
-  reportFilter = filter;
-  const btnAll   = document.getElementById('filterAll');
-  const btnIssue = document.getElementById('filterIssue');
-  const btnEdu   = document.getElementById('filterEdu');
-  if (btnAll)   btnAll.className   = 'btn btn-sm ' + (filter==='all'  ?'btn-p':'btn-s');
-  if (btnIssue) btnIssue.className = 'btn btn-sm ' + (filter==='issue'?'btn-p':'btn-s');
-  if (btnEdu)   btnEdu.className   = 'btn btn-sm ' + (filter==='edu'  ?'btn-p':'btn-s');
-  renderReport();
-}
-
-// 인쇄 그룹 전역 관리
-let _printGroup = 'all';
-window.addEventListener('beforeprint', () => {
-  document.body.classList.remove('print-all','print-normal','print-jungbil');
-  document.body.classList.add('print-' + _printGroup);
-});
-window.addEventListener('afterprint', () => {
-  document.body.classList.remove('print-all','print-normal','print-jungbil');
-  _printGroup = 'all';
-});
-
-function printReport(group='all') {
-  _printGroup = group;
-  window.print();
-}
-
-function renderReport() {
-  const isPeriod = dateMode === 'period';
-  const dateFrom = isPeriod ? (document.getElementById('reportStart')?.value||getToday()) : (document.getElementById('reportDate')?.value||getToday());
-  const dateTo   = isPeriod ? (document.getElementById('reportEnd')?.value||getToday())   : dateFrom;
-
-  if (isPeriod && dateFrom > dateTo) { toast('시작 날짜가 종료 날짜보다 늦습니다.'); return; }
-
-  const data = getData();
-  const recs = {};
-
-  if (isPeriod) {
-    // 기간 내 직원별 최신 기록 집계
-    data.records.filter(r => r.date >= dateFrom && r.date <= dateTo)
-      .sort((a,b) => a.date > b.date ? 1 : -1)
-      .forEach(r => { recs[r.empId] = recs[r.empId] || []; recs[r.empId].push(r); });
-  } else {
-    data.records.filter(r => r.date === dateFrom).forEach(r => { recs[r.empId] = r; });
-  }
-
-  const ROLE_ORDER = {'팀장':0,'부팀장':1,'대명장':2,'명장':3,'':4};
-  const teams = {};
-  data.employees.filter(e=>e.active!==false).forEach(emp=>{
-    if(!teams[emp.team]) teams[emp.team]=[];
-    teams[emp.team].push(emp);
-  });
-  // 각 팀 안에서 팀장→부팀장→일반 순 정렬
-  Object.keys(teams).forEach(team=>{
-    teams[team].sort((a,b)=>(ROLE_ORDER[a.role||'']??4)-(ROLE_ORDER[b.role||'']??4));
-  });
-
-  // ── 정빌팀 / 일반팀 분리 집계 ──────────────────────────
-  const isJungbil = emp => isJungbilTeam(emp.team);
-
-  let totalN=0, attendN=0, lateN=0, absentN=0; // 가전팀
-  let totalJ=0, attendJ=0, lateJ=0, absentJ=0; // 정빌팀
-  data.employees.filter(e=>e.active!==false).forEach(emp=>{
-    const jb = isJungbil(emp);
-    if(jb) totalJ++; else totalN++;
-    if (isPeriod) {
-      (recs[emp.id]||[]).forEach(r=>{
-        if(r.status==='출석'){ if(jb)attendJ++;else attendN++; }
-        else if(r.status==='지각'){ if(jb)lateJ++;else lateN++; }
-        else{ if(jb)absentJ++;else absentN++; }
-      });
-    } else {
-      const r=recs[emp.id];
-      if(r){
-        if(r.status==='출석'){ if(jb)attendJ++;else attendN++; }
-        else if(r.status==='지각'){ if(jb)lateJ++;else lateN++; }
-        else{ if(jb)absentJ++;else absentN++; }
-      }
-    }
-  });
-  const totalAll=totalN+totalJ, attendAll=attendN+attendJ, lateAll=lateN+lateJ, absentAll=absentN+absentJ;
-  const issueCount = lateAll + absentAll;
-  const isIssue = reportFilter === 'issue';
-  const isEdu   = reportFilter === 'edu';
-
-  const area = document.getElementById('reportContent'); if(!area) return;
-  const periodLabel = isPeriod ? `${dateFrom} ~ ${dateTo}` : `${dateFrom} (${getDayName(dateFrom)})`;
-
-  // 분리 요약 카드 헬퍼
-  function summaryRow(label, total, attend, late, absent, color, icon, sumGroup) {
-    const nocheck = isPeriod ? '-' : total - attend - late - absent;
-    return `<div data-sum-group="${sumGroup}" style="margin-bottom:8px">
-      <div style="font-size:10px;font-weight:700;color:${color};letter-spacing:.5px;margin-bottom:4px;display:flex;align-items:center;gap:5px">
-        <i class="${icon}"></i> ${label}
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:5px">
-        <div class="report-stat"><div class="n">${total}</div>인원</div>
-        <div class="report-stat attend"><div class="n">${attend}</div>출석</div>
-        <div class="report-stat late"><div class="n">${late}</div>지각</div>
-        <div class="report-stat absent"><div class="n">${absent}</div>결석</div>
-        <div class="report-stat"><div class="n">${nocheck}</div>미체크</div>
-      </div>
-    </div>`;
-  }
-
-  let html = `<div class="report-header">
-    <h1>${data.settings?.company||'이천물류'} 출석 현황${isIssue?' — 지각·결석':isEdu?' — 교육 명단':''}</h1>
-    <p style="font-size:13px;color:var(--text2);margin-top:4px">${periodLabel}</p>
-  </div>
-  ${summaryRow('가전팀', totalN, attendN, lateN, absentN, 'var(--amber)', 'fas fa-truck-moving', 'normal')}
-  ${summaryRow('정빌팀', totalJ, attendJ, lateJ, absentJ, '#a78bfa', 'fas fa-tint', 'jungbil')}
-  <div data-sum-group="all" style="border-top:1px solid var(--navy-border);margin:6px 0 10px"></div>
-  <div data-sum-group="all" style="display:flex;align-items:center;justify-content:space-between;font-size:10px;color:var(--text3);margin-bottom:12px;font-weight:600">
-    <span><i class="fas fa-sigma" style="margin-right:4px"></i>전체 합계</span>
-    <span style="display:flex;gap:12px">
-      <span>총 <b style="color:var(--text)">${totalAll}</b>명</span>
-      <span style="color:var(--success)">출석 <b>${attendAll}</b></span>
-      <span style="color:var(--warning)">지각 <b>${lateAll}</b></span>
-      <span style="color:var(--danger)">결석 <b>${absentAll}</b></span>
-      ${!isPeriod?`<span style="color:var(--text3)">미체크 <b>${totalAll-attendAll-lateAll-absentAll}</b></span>`:''}
-    </span>
-  </div>`;
-
-  // ── 교육 필터 ──────────────────────────────────────────────
-  if (isEdu) {
-    const rawEduList = Array.isArray(data.eduList) ? data.eduList : [];
-    const eduList = rawEduList.filter(e => !e.date || e.date === dateFrom);
-    if (!eduList.length) {
-      html += `<div style="text-align:center;padding:48px 20px;color:var(--text3)">
-        <i class="fas fa-graduation-cap" style="font-size:44px;display:block;margin-bottom:14px;color:#8e44ad"></i>
-        <div style="font-size:15px;font-weight:700;color:var(--text)">교육 대상자 없음</div>
-        <div style="font-size:13px;margin-top:6px;color:var(--text3)">현황 탭에서 교육 명단에 직원을 추가해주세요.</div>
-      </div>`;
-    } else {
-      html += `<div style="background:rgba(142,68,173,.15);border:1px solid rgba(142,68,173,.4);border-radius:10px;padding:12px 16px;margin-bottom:14px">
-        <div style="font-size:13px;font-weight:700;color:#c39bd3;letter-spacing:.4px">
-          <i class="fas fa-graduation-cap" style="margin-right:8px"></i>교육 참석 인원 — 총 <span style="font-size:20px;font-weight:900;font-variant-numeric:tabular-nums">${eduList.length}</span>명
-        </div>
-      </div>
-      <table class="report-table">
-        ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
-        <tbody>`;
-      eduList.forEach((edu, i) => {
-        const emp = data.employees.find(e => e.id === edu.id) || edu;
-        const rec = recs[edu.id];
-        const status = rec ? rec.status : '미체크';
-        const cls = status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
-        html += `<tr>
-          <td>${i+1}</td><td>${emp.id||edu.id}</td>
-          <td class="col-name">${edu.name}</td>
-          <td><span style="font-size:9px;background:rgba(142,68,173,.25);color:#c39bd3;padding:1px 6px;border-radius:4px;border:1px solid rgba(142,68,173,.4)">${edu.team}</span></td>
-          <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
-          <td>${emp.phone||'-'}</td>
-          <td><span class="report-status ${cls}">${status}</span></td>
-        </tr>`;
-      });
-      html += `</tbody></table>`;
-    }
-    area.innerHTML = html; return;
-  }
-
-  if (isIssue) {
-    if (issueCount === 0) {
-      html += `<div style="text-align:center;padding:48px 20px;color:var(--text3)">
-        <i class="fas fa-check-circle" style="font-size:44px;display:block;margin-bottom:14px;color:var(--success)"></i>
-        <div style="font-size:15px;font-weight:700;color:var(--text)">지각·결석 없음</div>
-        <div style="font-size:13px;margin-top:6px;color:var(--text3)">해당 기간 지각·결석 직원이 없습니다 🎉</div>
-      </div>`;
-    } else {
-      html += `<div style="background:rgba(244,160,32,.12);border:1px solid rgba(244,160,32,.35);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:var(--amber);font-weight:600">
-        <i class="fas fa-exclamation-triangle"></i> 지각 ${lateAll}건 · 결석 ${absentAll}건 — 총 ${issueCount}건
-      </div>
-      <table class="report-table">
-        ${isPeriod?'<colgroup><col style="width:4%"><col style="width:10%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>':'<colgroup><col style="width:4%"><col style="width:8%"><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:7%"><col style="width:7%"><col style="width:8%"></colgroup>'}
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>팀명</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
-        <tbody>`;
-      let no = 1;
-      Object.keys(teams).forEach(team=>{
-        teams[team].forEach(emp=>{
-          if (isPeriod) {
-            (recs[emp.id]||[]).filter(r=>r.status==='지각'||r.status==='결석').forEach(r=>{
-              const cls=r.status==='지각'?'late':'absent';
-              html+=`<tr><td>${no++}</td><td style="white-space:nowrap">${r.date}</td><td>${emp.id}</td>
-                <td class="col-name">${emp.name}</td><td>${team}</td>
-                <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
-                <td><span class="report-status ${cls}">${r.status}</span></td>
-                <td class="col-reason">${r.reason||'-'}</td></tr>`;
-            });
-          } else {
-            const r=recs[emp.id];
-            if(!r||(r.status!=='지각'&&r.status!=='결석')) return;
-            const cls=r.status==='지각'?'late':'absent';
-            html+=`<tr><td>${no++}</td><td>${emp.id}</td>
-              <td class="col-name">${emp.name}</td><td>${team}</td>
-              <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td><td>${r.time}</td>
-              <td><span class="report-status ${cls}">${r.status}</span></td>
-              <td class="col-reason">${r.reason||'-'}</td></tr>`;
-          }
-        });
-      });
-      html += `</tbody></table>`;
-    }
-    area.innerHTML = html; return;
-  }
-
-  // 전체 모드: 팀별 구분 테이블
-  let no = 1;
-  Object.keys(teams).forEach(team=>{
-    const emps = teams[team];
-    let tAttend=0, tLate=0, tAbsent=0;
-    emps.forEach(emp=>{
-      if (isPeriod) {
-        (recs[emp.id]||[]).forEach(r=>{ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; });
-      } else {
-        const r=recs[emp.id];
-        if(r){ if(r.status==='출석')tAttend++; else if(r.status==='지각')tLate++; else tAbsent++; }
-      }
-    });
-    const tNocheck = isPeriod ? '-' : emps.length-tAttend-tLate-tAbsent;
-    const teamGroup = isJungbilTeam(team) ? 'jungbil' : 'normal';
-    html += `<div data-team-group="${teamGroup}" style="margin-bottom:20px;border-radius:10px;overflow:hidden;border:1px solid var(--navy-border)">
-      <div style="display:flex;align-items:center;justify-content:space-between;background:var(--navy-mid);border-bottom:2px solid ${teamGroup==='jungbil'?'#a78bfa':'var(--amber)'};color:var(--text);padding:8px 12px;font-size:11px;font-weight:700">
-        <span><i class="fas fa-${teamGroup==='jungbil'?'tint':'users'}" style="color:${teamGroup==='jungbil'?'#a78bfa':'var(--amber)'};margin-right:6px"></i>${team} <span style="color:var(--text3);font-weight:400">(${emps.length}명)</span></span>
-        <span style="display:flex;gap:10px;font-size:10px;font-weight:600">
-          <span style="color:var(--success)">출석 ${tAttend}</span>
-          <span style="color:var(--warning)">지각 ${tLate}</span>
-          <span style="color:var(--danger)">결석 ${tAbsent}</span>
-          ${!isPeriod?`<span style="color:var(--text3)">미체크 ${tNocheck}</span>`:''}
-        </span>
-      </div>
-      <table class="report-table" style="margin-bottom:0">
-        <colgroup><col style="width:5%">${isPeriod?'<col style="width:12%">':''}<col style="width:10%"><col style="width:17%"><col style="width:13%"><col style="width:9%"><col style="width:9%"><col></colgroup>
-        <thead><tr><th>No</th>${isPeriod?'<th>날짜</th>':''}<th>ID</th><th>프로</th><th>차량번호</th><th>시간</th><th>상태</th><th>사유</th></tr></thead>
-        <tbody>`;
-    emps.forEach(emp=>{
-      if (isPeriod) {
-        const empRecs = recs[emp.id] || [];
-        if (!empRecs.length) {
-          html+=`<tr><td>${no++}</td><td colspan="2" style="color:#9aa0a6">기록없음</td>
-            <td class="col-name">${emp.name}</td>
-            <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
-            <td>-</td><td><span class="report-status nocheck">-</span></td><td>-</td></tr>`;
-        } else {
-          empRecs.forEach((r,i)=>{
-            const cls=r.status==='출석'?'attend':r.status==='지각'?'late':r.status==='결석'?'absent':'nocheck';
-            html+=`<tr>
-              <td>${i===0?no:''}${i===0&&empRecs.length>1?`<span style="font-size:9px;color:#9aa0a6"> (${empRecs.length}건)</span>`:''}</td>
-              <td style="white-space:nowrap">${r.date}</td>
-              <td>${i===0?emp.id:''}</td>
-              <td class="col-name" style="font-weight:${i===0?700:400}">${i===0?emp.name:''}</td>
-              <td style="color:var(--amber);font-weight:600">${i===0?emp.car||'-':''}</td>
-              <td>${r.time}</td>
-              <td><span class="report-status ${cls}">${r.status}</span></td>
-              <td class="col-reason">${r.reason||'-'}</td></tr>`;
-          });
-          no++;
-        }
-      } else {
-        const r=recs[emp.id]; const status=r?r.status:'미체크';
-        const cls=status==='출석'?'attend':status==='지각'?'late':status==='결석'?'absent':'nocheck';
-        html+=`<tr><td>${no++}</td><td>${emp.id}</td>
-          <td class="col-name">${emp.name}</td>
-          <td style="color:var(--amber);font-weight:600">${emp.car||'-'}</td>
-          <td>${r?r.time:'-'}</td>
-          <td><span class="report-status ${cls}">${status}</span></td>
-          <td class="col-reason">${r?r.reason||'-':'-'}</td></tr>`;
-      }
-    });
-    html+=`</tbody></table></div>`;
-  });
-
-  if (!Object.keys(teams).length) html += '<div class="empty-state"><i class="fas fa-users"></i><p>등록된 직원이 없습니다</p></div>';
-  area.innerHTML = html;
-}
 
 // ============================================================
 // QR 출력
@@ -6000,11 +5641,27 @@ async function printDailyQR() {
 // CSV 내보내기
 // ============================================================
 function exportCSV() {
-  const data=getData();
-  let csv='\uFEFF날짜,직원ID,프로,팀명,시간,상태,사유\n';
-  data.records.forEach(r=>{ csv+=`${r.date},${r.empId},${r.name},${r.team},${r.time},${r.status},${r.reason||''}\n`; });
-  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='출석기록_'+getToday()+'.csv'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  const data = getData();
+
+  // 출석 기록
+  let csv = '\uFEFF날짜,직원ID,프로,팀명,시간,상태,사유\n';
+  data.records.forEach(r => {
+    csv += `${r.date},${r.empId},${r.name},${r.team},${r.time},${r.status},${r.reason||''}\n`;
+  });
+
+  // 교육자 명단
+  const eduList = Array.isArray(data.eduList) ? data.eduList : [];
+  if (eduList.length > 0) {
+    csv += '\n교육일자,직원ID,프로,팀명\n';
+    eduList.forEach(e => {
+      csv += `${e.date||'-'},${e.id},${e.name},${e.team}\n`;
+    });
+  }
+
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = '출석기록_' + getToday() + '.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
 }
 
 // ============================================================
@@ -6125,7 +5782,7 @@ function vcInitSignCanvas() {
   vcCtx = vcCanvas.getContext('2d');
   vcCtx.lineWidth = 2.5;
   vcCtx.lineCap = 'round';
-  vcCtx.strokeStyle = '#1a1a2e';
+  vcCtx.strokeStyle = '#000';
 
   const getPos = (e) => {
     const rect = vcCanvas.getBoundingClientRect();
@@ -6355,31 +6012,6 @@ function vcRenderList() {
     const dayResults = v.dayResults || {};
     const days = Object.keys(dayResults).sort((a,b)=>(+a)-(+b));
     const badCount = days.reduce((sum,d)=> sum + Object.values(dayResults[d]||{}).filter(r=>r==='X').length, 0);
-
-    // 누락 날짜 계산 — 해당 월 1일~말일 중 미입력 날짜
-    let missingCount = 0;
-    if (v.yearMonth) {
-      const [y, m] = v.yearMonth.split('-').map(Number);
-      const totalDays = new Date(y, m, 0).getDate(); // 해당 월 마지막 날
-      const today = new Date();
-      // 현재 월이면 오늘까지만, 지난 달이면 말일까지
-      const isCurrentMonth = (today.getFullYear() === y && today.getMonth() + 1 === m);
-      const checkUntil = isCurrentMonth ? today.getDate() : totalDays;
-      const inputDays = new Set(days.map(Number));
-      for (let d = 1; d <= checkUntil; d++) {
-        if (!inputDays.has(d)) missingCount++;
-      }
-    }
-
-    // 상태 배지
-    let statusBadge = '';
-    if (missingCount > 0) {
-      statusBadge = `<span style="font-size:10px;background:rgba(255,107,107,.18);color:#FF6B6B;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(255,107,107,.35)">누락 ${missingCount}일</span>`;
-    } else if (badCount > 0) {
-      statusBadge = `<span style="font-size:10px;background:rgba(244,160,32,.18);color:#F4A020;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(244,160,32,.35)">불량 ${badCount}</span>`;
-    } else {
-      statusBadge = `<span style="font-size:10px;background:rgba(61,214,140,.15);color:#3DD68C;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(61,214,140,.3)">양호</span>`;
-    }
     
     // 관리자 버튼 구성 (인증 시에만 노출)
     let adminBtns = '';
@@ -6398,16 +6030,15 @@ function vcRenderList() {
         <div>
           <strong style="font-size:14px">${v.empName}</strong>
           <span style="font-size:12px;color:var(--text2);margin-left:6px">${v.carNumber||'-'}</span>
-          ${v.company ? `<span style="font-size:12px;color:var(--text3);margin-left:6px">· ${v.company}</span>` : ''}
         </div>
         <div style="display:flex;align-items:center;gap:8px">
-          ${statusBadge}
+          ${badCount > 0 ? `<span style="font-size:10px;background:#fce8e6;color:#c5221f;padding:2px 7px;border-radius:8px;font-weight:700">불량 ${badCount}</span>` : `<span style="font-size:10px;background:#e6f4ea;color:#1e7e34;padding:2px 7px;border-radius:8px;font-weight:700">양호</span>`}
           <button class="btn btn-sm btn-p" onclick="event.stopPropagation();vcPrintRecord('${v.id}')" title="인쇄"><i class="fas fa-print"></i></button>
           <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcSendRecord('${v.id}')" title="보내기"><i class="fas fa-share-square"></i></button>
           ${adminBtns}
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'})</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'}) · ${v.company||''}</div>
     </div>`;
   }).join('');
 }
@@ -6583,11 +6214,11 @@ Object.assign(window,{
   addEmployee,adminLogin,adminLogout,changeAdminPw,clearRole,closeCarModal,closeEmpSelect,
   confirmCheckin,confirmCheckinWithReason,confirmSavedEmp,changeSavedEmp,
   deleteEmp,eduDragOver,eduDragLeave,eduDrop,removeFromEdu,
-  exportCSV,highlightTodayRow,loadStats,manualCheckin,openCarModal,
+  exportCSV,highlightTodayRow,loadStats,manualCheckin,onAdminDateChange,openCarModal,
   openReasonModal,closeReasonModal,saveReasonModal,resetEmpAuth,
-  printDailyQR,printReport,qrLock,qrUnlock,regenQR,
-  renderReport,renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
-  setDateMode,setReportFilter,
+  printDailyQR,qrLock,qrUnlock,regenQR,
+  renderEmpSelect,renderEmployees,renderPublicEmpSearch,renderFirstTimeResults,selectAndSaveEmp,
+  setDateMode,
   seatClick,closeCtxMenu,doMoveTeamDirect,ctxMoveTeam,ctxToggleEdu,modalMoveTeam,modalToggleEdu,
   seatDragStart,seatDragEnd,seatDragOver,seatDragLeave,seatDragOverItem,seatDrop,
   resetCheckin,saveCarNumber,switchAdminTab,toggleEmp,toggleScanner,
