@@ -679,7 +679,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.49</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.50</span>
       </div>
     </div>
 
@@ -4110,17 +4110,62 @@ function updateClock() {
 // ============================================================
 // QR SCANNER
 // ============================================================
+
+// ── GPS 설정 (중부대로 743, 이천시) ──────────────────────────
+const OFFICE_LAT    = 37.2724;  // 위도
+const OFFICE_LNG    = 127.4345; // 경도
+const OFFICE_RADIUS = 300;      // 허용 반경 (미터)
+
+function gpsDistance(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 let scanning=false, scanStream=null, scanInterval=null;
 
 function toggleScanner() {
   if (scanning) { stopScanner(); return; }
-  if (!navigator.mediaDevices?.getUserMedia) { toast('카메라를 지원하지 않거나 HTTPS가 필요합니다.'); return; }
-  const wrap = document.getElementById('scannerWrap');
-  const btn  = document.getElementById('scanToggle');
-  wrap.style.display = 'block';
-  btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
-  scanning = true;
-  tryCam('environment');
+  if (!navigator.mediaDevices?.getUserMedia) {
+    toast('카메라를 지원하지 않거나 HTTPS가 필요합니다.'); return;
+  }
+  if (!navigator.geolocation) {
+    toast('GPS를 지원하지 않는 기기입니다.'); return;
+  }
+
+  toast('📍 위치 확인 중...');
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const dist = gpsDistance(
+        pos.coords.latitude, pos.coords.longitude,
+        OFFICE_LAT, OFFICE_LNG
+      );
+      if (dist > OFFICE_RADIUS) {
+        toast(`⛔ 출석 위치가 아닙니다. (${Math.round(dist)}m 이탈)`);
+        return;
+      }
+      // 위치 확인 완료 → 카메라 시작
+      const wrap = document.getElementById('scannerWrap');
+      const btn  = document.getElementById('scanToggle');
+      wrap.style.display = 'block';
+      btn.innerHTML = '<i class="fas fa-times"></i> <span>카메라 끄기</span>';
+      scanning = true;
+      tryCam('environment');
+    },
+    err => {
+      const msgs = {
+        1: '위치 권한이 거부되었습니다. 설정에서 허용해주세요.',
+        2: 'GPS 신호를 받을 수 없습니다.',
+        3: '위치 확인 시간이 초과되었습니다.'
+      };
+      toast(msgs[err.code] || 'GPS 오류가 발생했습니다.');
+    },
+    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+  );
 
   function tryCam(facing) {
     const c = { audio:false, video:{ width:{ideal:640}, height:{ideal:480} } };
@@ -4129,12 +4174,17 @@ function toggleScanner() {
       .then(stream => {
         scanStream = stream;
         const v = document.getElementById('video');
-        v.srcObject = stream; v.muted = true; v.setAttribute('playsinline',true); v.play().catch(()=>{});
+        v.srcObject = stream; v.muted = true;
+        v.setAttribute('playsinline', true); v.play().catch(()=>{});
         scanInterval = setInterval(scanFrame, 400);
       })
       .catch(err => {
         if (facing === 'environment') { tryCam(null); return; }
-        const msgs = { NotAllowedError:'카메라 권한이 거부되었습니다.', NotFoundError:'카메라를 찾을 수 없습니다.', NotReadableError:'카메라가 다른 앱에서 사용 중입니다.' };
+        const msgs = {
+          NotAllowedError: '카메라 권한이 거부되었습니다.',
+          NotFoundError:   '카메라를 찾을 수 없습니다.',
+          NotReadableError:'카메라가 다른 앱에서 사용 중입니다.'
+        };
         toast(msgs[err.name] || '카메라를 열 수 없습니다.'); stopScanner();
       });
   }
