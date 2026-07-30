@@ -391,7 +391,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   .card-title{font-size:14px}
 
   /* 테이블 - 스크롤 가능하게 */
-  .table-wrap{max-height:320px}
+  .table-wrap{max-height:calc(100vh - 180px)}
   table{font-size:12px}
   th,td{padding:6px 6px}
 
@@ -631,7 +631,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         </select>
       </div>
     </div>
-    <div class="table-wrap">
+    <div class="table-wrap" style="max-height:calc(100vh - 220px)">
       <table>
         <thead>
           <tr>
@@ -679,7 +679,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.50</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.51</span>
       </div>
     </div>
 
@@ -754,7 +754,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     <div id="vcSignSection" style="margin-top:16px;border-top:1.5px dashed var(--border);padding-top:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--primary)"><i class="fas fa-pen-nib"></i> 점검자 확인(서명)</div>
       <div style="background:var(--border-light);border-radius:var(--radius);padding:10px;text-align:center">
-        <canvas id="vcSignCanvas" width="300" height="120" style="background:var(--navy-mid);border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
+        <canvas id="vcSignCanvas" width="300" height="120" style="background:#ffffff;border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
         <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
           <button class="btn btn-sm btn-s" onclick="vcClearSign()"><i class="fas fa-eraser"></i> 지우기</button>
         </div>
@@ -5832,7 +5832,7 @@ function vcInitSignCanvas() {
   vcCtx = vcCanvas.getContext('2d');
   vcCtx.lineWidth = 2.5;
   vcCtx.lineCap = 'round';
-  vcCtx.strokeStyle = '#000';
+  vcCtx.strokeStyle = '#1a1a2e';
 
   const getPos = (e) => {
     const rect = vcCanvas.getBoundingClientRect();
@@ -6062,33 +6062,51 @@ function vcRenderList() {
     const dayResults = v.dayResults || {};
     const days = Object.keys(dayResults).sort((a,b)=>(+a)-(+b));
     const badCount = days.reduce((sum,d)=> sum + Object.values(dayResults[d]||{}).filter(r=>r==='X').length, 0);
-    
-    // 관리자 버튼 구성 (인증 시에만 노출)
+
+    // 누락 날짜 계산
+    let missingCount = 0;
+    if (v.yearMonth) {
+      const [y, m] = v.yearMonth.split('-').map(Number);
+      const totalDays = new Date(y, m, 0).getDate();
+      const today = new Date();
+      const isCurrentMonth = (today.getFullYear() === y && today.getMonth() + 1 === m);
+      const checkUntil = isCurrentMonth ? today.getDate() : totalDays;
+      const inputDays = new Set(days.map(Number));
+      for (let d = 1; d <= checkUntil; d++) {
+        if (!inputDays.has(d)) missingCount++;
+      }
+    }
+
+    // 관리자 버튼
     let adminBtns = '';
     if (vcListUnlocked) {
       adminBtns = `
-        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();vcDelete('${v.id}')" title="삭제">
-          <i class="fas fa-trash"></i>
-        </button>
-        <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcLoad('${v.id}')" title="수정">
-          <i class="fas fa-edit"></i>
-        </button>`;
+        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();vcDelete('${v.id}')" title="삭제"><i class="fas fa-trash"></i></button>
+        <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcLoad('${v.id}')" title="수정"><i class="fas fa-edit"></i></button>`;
     }
+
+    // 누락/누적 배지
+    const missingBadge = missingCount > 0
+      ? `<span style="font-size:10px;background:rgba(255,107,107,.18);color:#FF6B6B;padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(255,107,107,.35)">누락 ${missingCount}일</span>`
+      : '';
+    const accumBadge = `<span style="font-size:10px;background:rgba(61,214,140,.13);color:var(--success);padding:2px 7px;border-radius:8px;font-weight:700;border:1px solid rgba(61,214,140,.3)">누적 ${days.length}일</span>`;
 
     return `<div class="vc-card" onclick="vcPrintRecord('${v.id}')" title="클릭하여 인쇄">
       <div style="display:flex;justify-content:space-between;align-items:center">
         <div>
           <strong style="font-size:14px">${v.empName}</strong>
           <span style="font-size:12px;color:var(--text2);margin-left:6px">${v.carNumber||'-'}</span>
+          ${v.company ? `<span style="font-size:12px;color:var(--text3);margin-left:6px">· ${v.company}</span>` : ''}
         </div>
-        <div style="display:flex;align-items:center;gap:8px">
-          ${badCount > 0 ? `<span style="font-size:10px;background:#fce8e6;color:#c5221f;padding:2px 7px;border-radius:8px;font-weight:700">불량 ${badCount}</span>` : `<span style="font-size:10px;background:#e6f4ea;color:#1e7e34;padding:2px 7px;border-radius:8px;font-weight:700">양호</span>`}
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end">
+          ${accumBadge}
+          ${missingBadge}
           <button class="btn btn-sm btn-p" onclick="event.stopPropagation();vcPrintRecord('${v.id}')" title="인쇄"><i class="fas fa-print"></i></button>
           <button class="btn btn-sm btn-s" onclick="event.stopPropagation();vcSendRecord('${v.id}')" title="보내기"><i class="fas fa-share-square"></i></button>
           ${adminBtns}
         </div>
       </div>
-      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 누적 ${days.length}일 입력 (${days.length?days.join(', ')+'일':'-'}) · ${v.company||''}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">${v.yearMonth||''} · 입력일: ${days.length ? days.join(', ')+'일' : '-'}${badCount > 0 ? ` · <span style="color:#F4A020">불량 ${badCount}건</span>` : ''}</div>
     </div>`;
   }).join('');
 }
