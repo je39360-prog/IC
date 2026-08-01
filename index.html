@@ -232,6 +232,10 @@ th,td{padding:8px 10px;text-align:center;border-bottom:1px solid var(--navy-bord
 th{background:var(--navy-mid);font-weight:700;font-size:10px;color:var(--text3);position:sticky;top:0;z-index:1;letter-spacing:.8px;text-transform:uppercase}
 tr:nth-child(even){background:rgba(255,255,255,.025)}
 tr:hover td{background:var(--amber-glow)}
+/* 직원조회 행 확대 효과 */
+#publicEmpTable tr{transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s ease,font-size .18s ease}
+#publicEmpTable tr:hover{transform:scaleY(1.13) scaleX(1.02) translateZ(0);box-shadow:0 6px 22px rgba(244,160,32,.22);position:relative;z-index:2}
+#publicEmpTable tr:hover td{background:rgba(244,160,32,.15);font-size:108%}
 .empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state i{font-size:40px;margin-bottom:10px;display:block}
 
@@ -679,7 +683,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.51</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.52</span>
       </div>
     </div>
 
@@ -754,7 +758,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
     <div id="vcSignSection" style="margin-top:16px;border-top:1.5px dashed var(--border);padding-top:16px">
       <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--primary)"><i class="fas fa-pen-nib"></i> 점검자 확인(서명)</div>
       <div style="background:var(--border-light);border-radius:var(--radius);padding:10px;text-align:center">
-        <canvas id="vcSignCanvas" width="300" height="120" style="background:#ffffff;border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
+        <canvas id="vcSignCanvas" width="300" height="120" style="background:var(--navy-mid);border:1.5px solid var(--navy-border);border-radius:8px;cursor:crosshair;touch-action:none;width:100%;max-width:400px;height:auto"></canvas>
         <div style="margin-top:8px;display:flex;gap:6px;justify-content:center">
           <button class="btn btn-sm btn-s" onclick="vcClearSign()"><i class="fas fa-eraser"></i> 지우기</button>
         </div>
@@ -791,7 +795,12 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   <div class="card" style="padding:14px 16px">
     <div class="card-title" style="font-size:14px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
       <span><i class="fas fa-folder-open"></i> 저장된 점검표</span>
-      <div style="display:flex;gap:6px;align-items:center">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:5px;background:var(--navy-mid);border:1px solid var(--navy-border);border-radius:8px;padding:4px 8px">
+          <i class="fas fa-calendar-alt" style="color:var(--amber);font-size:12px"></i>
+          <input type="month" id="vcListMonth" style="background:transparent;border:none;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;width:120px" oninput="vcRenderList()">
+          <button onclick="document.getElementById('vcListMonth').value='';vcRenderList()" title="전체 보기" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:10px;font-weight:600;padding:0">전체</button>
+        </div>
         <input type="text" id="vcListSearch" placeholder="프로/차량번호 검색" style="width:auto;max-width:140px;min-width:80px;font-size:12px;padding:5px 8px" oninput="vcRenderList()">
         <button id="vcAdminBtn" class="btn btn-sm btn-s" onclick="vcToggleAdminAuth()" title="관리자 인증 (수정/삭제)">
           <i class="fas fa-lock"></i> 관리자
@@ -5832,7 +5841,7 @@ function vcInitSignCanvas() {
   vcCtx = vcCanvas.getContext('2d');
   vcCtx.lineWidth = 2.5;
   vcCtx.lineCap = 'round';
-  vcCtx.strokeStyle = '#1a1a2e';
+  vcCtx.strokeStyle = '#ffffff';
 
   const getPos = (e) => {
     const rect = vcCanvas.getBoundingClientRect();
@@ -6048,13 +6057,25 @@ function vcRenderList() {
   if (!wrap) return;
 
   const search = (document.getElementById('vcListSearch')?.value || '').toLowerCase();
+  const monthInput = document.getElementById('vcListMonth');
+  // 최초 실행 시 이번 달로 자동 설정
+  if (monthInput && !monthInput.value) {
+    monthInput.value = getToday().slice(0, 7); // "YYYY-MM"
+  }
+  const selectedMonth = monthInput?.value || '';
+
   const data = getData();
   const list = (Array.isArray(data.vehicleChecks) ? data.vehicleChecks : [])
-    .filter(v => !search || v.empName.toLowerCase().includes(search) || (v.carNumber||'').toLowerCase().includes(search))
+    .filter(v => {
+      const matchSearch = !search || v.empName.toLowerCase().includes(search) || (v.carNumber||'').toLowerCase().includes(search);
+      const matchMonth  = !selectedMonth || (v.yearMonth === selectedMonth);
+      return matchSearch && matchMonth;
+    })
     .sort((a,b) => (b.savedAt||'').localeCompare(a.savedAt||''));
 
   if (!list.length) {
-    wrap.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fas fa-clipboard"></i><p>저장된 점검표가 없습니다</p></div>`;
+    const msg = selectedMonth ? `${selectedMonth} 점검표가 없습니다` : '저장된 점검표가 없습니다';
+    wrap.innerHTML = `<div class="empty-state" style="padding:24px"><i class="fas fa-clipboard"></i><p>${msg}</p></div>`;
     return;
   }
 
