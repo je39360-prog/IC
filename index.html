@@ -235,8 +235,7 @@ tr:hover td{background:var(--amber-glow)}
 /* 직원조회 행 확대 효과 */
 #publicEmpTable tr{transition:transform .18s cubic-bezier(.4,0,.2,1),box-shadow .18s ease,font-size .18s ease}
 #publicEmpTable tr:hover{transform:scaleY(1.13) scaleX(1.02) translateZ(0);box-shadow:0 6px 22px rgba(244,160,32,.22);position:relative;z-index:2}
-#publicEmpTable tr:hover td{background:rgba(244,160,32,.15);font-size:108%}
-.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
+#publicEmpTable tr:hover td{background:rgba(244,160,32,.15);font-size:108%}.empty-state{text-align:center;padding:40px 20px;color:var(--text3)}
 .empty-state i{font-size:40px;margin-bottom:10px;display:block}
 
 /* Report */
@@ -683,7 +682,7 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
         <button onclick="manualCheckin()"><i class="fas fa-arrow-right"></i></button>
       </div>
       <div style="text-align:left;margin-top:8px;padding-left:2px">
-        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.52</span>
+        <span style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:.5px;user-select:none">V 1.53</span>
       </div>
     </div>
 
@@ -4084,6 +4083,61 @@ document.addEventListener('DOMContentLoaded', () => {
       loadTodayAdmin();
     });
   }
+  // 직원조회 마우스 자동 스크롤
+  (function() {
+    let rafId = null;
+    let scrollSpeed = 0;
+    const ZONE = 80;    // 감지 영역 (px) — 상하 끝에서 이 거리 안에 들어오면 스크롤
+    const MAX  = 12;    // 최대 스크롤 속도 (px/frame)
+
+    function getWrap() {
+      const tab = document.getElementById('tab-empsearch');
+      if (!tab || tab.classList.contains('hide')) return null;
+      return tab.querySelector('.table-wrap');
+    }
+
+    document.addEventListener('mousemove', e => {
+      const wrap = getWrap();
+      if (!wrap) { scrollSpeed = 0; return; }
+
+      const rect = wrap.getBoundingClientRect();
+      const y = e.clientY;
+
+      // 테이블 영역 밖이면 스크롤 안 함
+      if (y < rect.top || y > rect.bottom) { scrollSpeed = 0; return; }
+
+      const distTop = y - rect.top;
+      const distBot = rect.bottom - y;
+
+      if (distTop < ZONE) {
+        // 위쪽 — 위로 스크롤 (음수)
+        scrollSpeed = -MAX * (1 - distTop / ZONE);
+      } else if (distBot < ZONE) {
+        // 아래쪽 — 아래로 스크롤 (양수)
+        scrollSpeed = MAX * (1 - distBot / ZONE);
+      } else {
+        scrollSpeed = 0;
+      }
+
+      if (scrollSpeed !== 0 && !rafId) {
+        function step() {
+          const w = getWrap();
+          if (w && scrollSpeed !== 0) {
+            w.scrollTop += scrollSpeed;
+            rafId = requestAnimationFrame(step);
+          } else {
+            rafId = null;
+          }
+        }
+        rafId = requestAnimationFrame(step);
+      }
+    });
+
+    document.addEventListener('mouseleave', () => {
+      scrollSpeed = 0;
+    });
+  })();
+
   setInterval(updateClock, 1000); updateClock();
 
   // URL 파라미터 처리 (QR 스캔)
