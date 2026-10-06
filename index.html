@@ -583,6 +583,335 @@ button,.btn,.nav-btn,.vc-result-btn{min-height:44px}
   body.print-jungbil [data-sum-group="normal"]   { display:none !important; }
   body.print-jungbil [data-sum-group="all"]      { display:none !important; }
 }
+
+/* =========================================================
+   ICHEON LOGISTICS — Clean Corporate Redesign
+   Inspired by premium Korean electronics brand interfaces.
+   Functional markup and JavaScript remain unchanged.
+   ========================================================= */
+:root{
+  --navy:#f5f6f8;
+  --navy-mid:#ffffff;
+  --navy-light:#ffffff;
+  --navy-border:#e3e6eb;
+  --amber:#d9274f;
+  --amber-dark:#b51d3e;
+  --amber-glow:rgba(217,39,79,.10);
+  --ice:#17191c;
+  --bg:#f5f6f8;
+  --card:#ffffff;
+  --primary:#d9274f;
+  --primary-dark:#b51d3e;
+  --success:#16834c;
+  --success-bg:rgba(22,131,76,.10);
+  --warning:#b46a00;
+  --warning-bg:rgba(180,106,0,.10);
+  --danger:#d13232;
+  --danger-bg:rgba(209,50,50,.10);
+  --text:#17191c;
+  --text2:#5e6672;
+  --text3:#8a929d;
+  --border:#e3e6eb;
+  --border-light:#f0f2f5;
+  --shadow:0 2px 12px rgba(20,28,38,.06);
+  --shadow-lg:0 18px 50px rgba(20,28,38,.14);
+  --radius:12px;
+  --radius-lg:18px;
+  --font:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo',sans-serif;
+  --transition:.22s cubic-bezier(.4,0,.2,1);
+}
+html{background:var(--bg)}
+body{
+  background:linear-gradient(180deg,#fff 0,#f5f6f8 260px,#f5f6f8 100%);
+  color:var(--text);
+  font-family:var(--font);
+}
+body:before{content:'';display:block;height:4px;background:var(--primary)}
+.nav{
+  min-height:72px;padding:0 max(16px,calc((100vw - 1180px)/2));
+  gap:4px;background:rgba(255,255,255,.96);border-bottom:1px solid #eceef1;
+  box-shadow:0 4px 16px rgba(20,28,38,.05);backdrop-filter:blur(14px);
+  overflow-x:auto;scrollbar-width:none;
+}
+.nav::-webkit-scrollbar{display:none}
+.nav:before{content:'ICHEON\A LOGISTICS';white-space:pre;line-height:1.05;display:flex;align-items:center;width:170px;flex:0 0 170px;font-size:15px;font-weight:900;letter-spacing:1.2px;color:#15171a}
+.nav:after{content:'';width:5px;height:5px;border-radius:50%;background:var(--primary);position:absolute;left:max(16px,calc((100vw - 1180px)/2));top:34px;transform:translateX(160px)}
+.nav-btn{height:72px;min-width:92px;padding:0 14px;color:#737b87;font-size:12px;font-weight:700;letter-spacing:0;border-radius:0;background:transparent}
+.nav-btn i{font-size:15px;color:#a0a7b0;transition:color var(--transition)}
+.nav-btn:hover{color:var(--text);background:#fafafa}
+.nav-btn:hover i,.nav-btn.active i{color:var(--primary)}
+.nav-btn.active{color:var(--text)}
+.nav-btn.active:after{height:3px;bottom:0;left:18px;right:18px;background:var(--primary);border-radius:3px 3px 0 0}
+.page{max-width:980px;padding:34px 20px 80px;}
+.card{background:#fff;border:1px solid #e4e7eb;border-radius:20px;box-shadow:var(--shadow);padding:28px 26px;margin-bottom:20px}
+.card:before{display:none}
+.card-title{font-size:16px;font-weight:800;letter-spacing:-.35px;color:#1c2025;margin-bottom:18px}
+.card-title i{color:var(--primary)}
+.logo{width:64px;height:64px;background:#17191c;border-radius:19px;margin:0 auto 18px;color:#fff;font-size:25px;box-shadow:none;position:relative}
+.logo:after{content:'';position:absolute;width:10px;height:10px;border-radius:50%;background:var(--primary);right:9px;top:9px}
+.logo-sm{width:44px;height:44px;border-radius:14px}
+input,select,textarea,.input-group input{background:#fff;color:var(--text);border:1px solid #dfe3e8;border-radius:10px;min-height:44px;box-shadow:none}
+input::placeholder,textarea::placeholder{color:#a1a8b1}
+input:focus,select:focus,textarea:focus,.input-group input:focus{border-color:var(--primary);box-shadow:0 0 0 4px var(--amber-glow)}
+.input-group button{background:var(--primary);color:#fff;border-radius:10px;box-shadow:none}
+.btn{border-radius:10px;min-height:44px;font-size:13px;font-weight:800;box-shadow:none;letter-spacing:-.1px}
+.btn-p{background:var(--primary);color:#fff;box-shadow:0 7px 18px rgba(217,39,79,.18)}
+.btn-p:hover{background:var(--primary-dark);box-shadow:0 9px 24px rgba(217,39,79,.25);filter:none}
+.btn-s{background:#fff;color:#4d5661;border:1px solid #dfe3e8}
+.btn-s:hover{background:#f7f8fa;color:var(--text);border-color:#c8ced6}
+.btn-success{background:#198754;color:#fff}.btn-danger{background:#d64545;color:#fff}
+.btn-sm{min-height:36px;border-radius:8px;padding:6px 12px}
+.btn-checkin{background:var(--primary);color:#fff;border-radius:14px;box-shadow:0 8px 22px rgba(217,39,79,.22);font-size:17px;padding:17px 24px}
+.btn-checkin:hover{background:var(--primary-dark);box-shadow:0 11px 28px rgba(217,39,79,.28);filter:none}
+.clock-display .time{font-size:42px;font-weight:800;letter-spacing:1px;color:#17191c}
+.summary-grid{gap:12px}
+.summary-card{background:#fff;border:1px solid #e5e8ec;border-radius:14px;box-shadow:none;padding:18px 12px}
+.summary-card:after{height:3px}
+.summary-card .num{font-size:30px}
+.table-wrap{border:1px solid #e2e6eb;border-radius:12px;background:#fff}
+table{font-size:13px}th,td{padding:12px 10px;border-bottom:1px solid #edf0f3}th{background:#fafbfc;color:#747d88;font-size:10px}tr:nth-child(even){background:#fcfcfd}tr:hover td{background:#fff6f8!important}
+.emp-grid{gap:10px}.emp-card{background:#fff;border:1px solid #e5e8ec;border-radius:14px;padding:17px 10px}.emp-card:hover{background:#fff;border-color:#e8a0b0;box-shadow:0 8px 22px rgba(20,28,38,.08)}
+.team-header{color:var(--primary);border-bottom:1px solid #f0b5c0}
+.badge{border-radius:20px;padding:5px 10px;font-size:11px}
+.scanner-wrap{border-radius:14px;background:#17191c}.scanner-overlay{border:2px solid var(--primary)}
+.result-wrap .time-box{background:#f4f5f7}
+.progress-bar{background:#eceff2}
+.filter-bar{background:#fafbfc;border:1px solid #e8ebee;padding:12px;border-radius:12px}
+.vc-item,.vc-card{background:#fff;border:1px solid #e3e7eb;border-radius:14px}.vc-item:hover,.vc-card:hover{background:#fbfcfd}
+.vc-item-num{background:var(--primary);color:#fff}.vc-result-btn{background:#fff;border-color:#dfe3e8}
+#seatCtxMenu{background:#fff;border-color:#e1e5e9;box-shadow:var(--shadow-lg)}
+#seatCtxMenu .ctx-header{border-color:#edf0f3}.seat-team-block{background:#fff;border:1px solid #edf0f3;border-radius:14px;padding:14px}.seat-grid{background:#fafbfc}
+.seat.nocheck{background:#fff;border-color:#dfe3e8}.seat.attend{background:#effaf4}.seat.late{background:#fff8eb}.seat.absent{background:#fff1f1}
+.modal-overlay{background:rgba(20,24,30,.42)}
+.toast{background:#17191c;border-radius:10px}
+@media(max-width:768px){
+  .nav{min-height:64px;padding:0 10px}.nav:before{width:112px;flex-basis:112px;font-size:11px;letter-spacing:.9px}.nav:after{left:10px;top:30px;transform:translateX(104px)}.nav-btn{height:64px;min-width:74px;padding:0 8px;font-size:11px}.nav-btn.active:after{left:10px;right:10px}
+  .page{padding:22px 12px 72px}.card{padding:22px 16px;border-radius:16px}.clock-display .time{font-size:34px}
+}
+@media(max-width:480px){
+  .nav:before{width:42px;flex-basis:42px;font-size:0}.nav:before:first-letter{font-size:0}.nav:after{display:none}.nav-btn{min-width:60px}.nav-btn span{display:none}.nav-btn i{font-size:16px}.nav-btn{flex-direction:column;gap:3px}
+  .page{padding:14px 10px 64px}.card{padding:18px 13px;margin-bottom:14px}.logo{width:56px;height:56px;border-radius:16px}.clock-display .time{font-size:28px}.summary-grid{gap:7px}.summary-card{padding:13px 7px}.summary-card .num{font-size:23px}
+}
+
+
+/* =========================================================
+   ICHEON LOGISTICS — Tesla-inspired Black Minimal Redesign
+   Functional markup and JavaScript remain unchanged.
+   ========================================================= */
+:root{
+  --navy:#08090a;
+  --navy-mid:#111214;
+  --navy-light:#17191c;
+  --navy-border:#2b2e33;
+  --amber:#ffffff;
+  --amber-dark:#d7d7d9;
+  --amber-glow:rgba(255,255,255,.10);
+  --ice:#ffffff;
+  --bg:#08090a;
+  --card:#111214;
+  --primary:#ffffff;
+  --primary-dark:#dedee0;
+  --success:#53c68c;
+  --success-bg:rgba(83,198,140,.13);
+  --warning:#f3b94e;
+  --warning-bg:rgba(243,185,78,.13);
+  --danger:#f27777;
+  --danger-bg:rgba(242,119,119,.13);
+  --text:#f5f5f5;
+  --text2:#a4a6ab;
+  --text3:#707278;
+  --border:#2b2e33;
+  --border-light:#202226;
+  --shadow:0 12px 35px rgba(0,0,0,.28);
+  --shadow-lg:0 24px 80px rgba(0,0,0,.55);
+  --radius:4px;
+  --radius-lg:8px;
+  --font:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo',sans-serif;
+  --transition:.22s ease;
+}
+html{background:#08090a}
+body{
+  background:#08090a;
+  color:var(--text);
+  letter-spacing:-.2px;
+}
+body:before{height:0;background:none}
+.nav{
+  min-height:62px;padding:0 34px;gap:0;background:rgba(8,9,10,.86);
+  border-bottom:1px solid rgba(255,255,255,.08);box-shadow:none;backdrop-filter:blur(18px);
+}
+.nav:before{content:'ICHEON\A LOGISTICS';white-space:pre;line-height:1.02;width:190px;flex:0 0 190px;font-size:14px;font-weight:600;letter-spacing:1.8px;color:#f5f5f5}
+.nav:after{display:none}
+.nav-btn{height:62px;min-width:94px;padding:0 12px;color:#7d8086;font-size:11px;font-weight:500;letter-spacing:.2px;border-radius:0}
+.nav-btn i{font-size:13px;color:#85888e}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,.045)}
+.nav-btn:hover i,.nav-btn.active i{color:#fff}
+.nav-btn.active{color:#fff}
+.nav-btn.active:after{height:2px;bottom:0;left:24px;right:24px;background:#fff;border-radius:0}
+.page{max-width:980px;padding:42px 20px 84px}
+.card{background:linear-gradient(145deg,#17191c,#101113);border:1px solid #292c31;border-radius:8px;box-shadow:var(--shadow);padding:30px 26px;margin-bottom:22px}
+.card:before{display:none}
+.card-title{font-size:15px;font-weight:600;letter-spacing:.2px;color:#f4f4f5;margin-bottom:18px}
+.card-title i{color:#fff}
+.logo{width:62px;height:62px;background:#f4f4f4;border-radius:50%;margin:0 auto 19px;color:#08090a;font-size:24px;box-shadow:0 0 0 1px rgba(255,255,255,.2),0 10px 30px rgba(0,0,0,.3)}
+.logo:after{content:'';position:absolute;width:8px;height:8px;border-radius:50%;background:#8e9298;right:10px;top:10px}
+.logo-sm{width:42px;height:42px}
+input,select,textarea,.input-group input{background:#0c0d0f;color:#f4f4f5;border:1px solid #34373c;border-radius:4px;min-height:44px;box-shadow:none}
+input::placeholder,textarea::placeholder{color:#666a71}
+select option{background:#15171a;color:#fff}
+input:focus,select:focus,textarea:focus,.input-group input:focus{border-color:#fff;box-shadow:0 0 0 1px #fff}
+.input-group button{background:#f4f4f4;color:#090a0b;border-radius:4px;box-shadow:none}
+.btn{border-radius:4px;min-height:42px;font-size:12px;font-weight:600;box-shadow:none;letter-spacing:.2px}
+.btn-p{background:#f4f4f4;color:#08090a;box-shadow:none}
+.btn-p:hover{background:#fff;color:#000;box-shadow:0 0 0 1px rgba(255,255,255,.8);filter:none}
+.btn-s{background:transparent;color:#e7e7e8;border:1px solid #4b4e54}
+.btn-s:hover{background:#25272a;color:#fff;border-color:#8b8e94}
+.btn-success{background:#2d9e6b;color:#fff}.btn-danger{background:#b84b4b;color:#fff}
+.btn-sm{min-height:34px;border-radius:4px;padding:5px 11px}
+.btn-checkin{background:#f4f4f4;color:#08090a;border-radius:4px;box-shadow:none;font-size:16px;padding:18px 24px;letter-spacing:.1px}
+.btn-checkin:hover{background:#fff;color:#000;box-shadow:0 0 0 1px #fff;filter:none}
+.clock-display .time{font-size:44px;font-weight:300;letter-spacing:2px;color:#fff}
+.clock-display .date{color:#8d9096}
+.summary-grid{gap:10px}
+.summary-card{background:#111214;border:1px solid #2b2e33;border-radius:4px;box-shadow:none;padding:18px 12px}
+.summary-card:after{height:2px;background:#fff!important;opacity:.4}
+.summary-card .num{font-size:29px;font-weight:500}.summary-card .label{color:#7d8086}
+.table-wrap{border:1px solid #2d3035;border-radius:4px;background:#101113}
+table{font-size:12px}th,td{padding:12px 10px;border-bottom:1px solid #25282d}th{background:#191b1e;color:#85888f;font-size:9px;font-weight:600}tr:nth-child(even){background:rgba(255,255,255,.018)}tr:hover td{background:rgba(255,255,255,.07)!important}
+.emp-grid{gap:8px}.emp-card{background:#111214;border:1px solid #2b2e33;border-radius:4px;padding:17px 10px}.emp-card:hover{background:#1b1d20;border-color:#888;box-shadow:none}.emp-card .team{color:#85888e}
+.team-header{color:#fff;border-bottom:1px solid #5a5d62}
+.badge{border-radius:3px;padding:4px 8px;font-size:10px}
+.scanner-wrap{border-radius:4px;background:#000}.scanner-overlay{border:1px solid #fff}
+.result-wrap .time-box{background:#202226}
+.progress-bar{background:#25282c}
+.filter-bar{background:#15171a;border:1px solid #2a2d32;padding:12px;border-radius:4px}
+.vc-item,.vc-card{background:#111214;border:1px solid #2b2e33;border-radius:4px}.vc-item:hover,.vc-card:hover{background:#181a1d}.vc-item-num{background:#f4f4f4;color:#090a0b}.vc-result-btn{background:#0d0e10;border-color:#3a3d43;color:#9b9ea4}
+#seatCtxMenu{background:#15171a;border-color:#35383d;box-shadow:var(--shadow-lg)}#seatCtxMenu .ctx-header{border-color:#2b2e33}.seat-team-block{background:#101113;border:1px solid #292c31;border-radius:4px;padding:14px}.seat-grid{background:#0c0d0f}
+.seat.nocheck{background:#15171a;border-color:#30333a}.seat.attend{background:rgba(83,198,140,.12)}.seat.late{background:rgba(243,185,78,.12)}.seat.absent{background:rgba(242,119,119,.12)}
+.modal-overlay{background:rgba(0,0,0,.72)}
+.toast{background:#f4f4f4;color:#090a0b;border-radius:4px}
+@media(max-width:768px){
+  .nav{min-height:58px;padding:0 12px}.nav:before{width:115px;flex-basis:115px;font-size:11px;letter-spacing:1.4px}.nav-btn{height:58px;min-width:72px;padding:0 8px;font-size:10px}.nav-btn.active:after{left:14px;right:14px}.page{padding:26px 12px 72px}.card{padding:24px 16px}.clock-display .time{font-size:36px}
+}
+@media(max-width:480px){
+  .nav{padding:0 8px}.nav:before{width:36px;flex-basis:36px;font-size:0}.nav-btn{min-width:58px}.nav-btn span{display:none}.nav-btn i{font-size:15px}.nav-btn{flex-direction:column;gap:3px}.page{padding:16px 9px 62px}.card{padding:20px 13px;margin-bottom:14px}.logo{width:56px;height:56px}.clock-display .time{font-size:29px}.summary-grid{gap:6px}.summary-card{padding:13px 7px}.summary-card .num{font-size:22px}
+}
+
+
+/* =========================================================
+   ICHEON LOGISTICS — National Assembly-inspired Civic Redesign
+   Official, authoritative, accessible, with amplified visual effects.
+   Functional markup and JavaScript remain unchanged.
+   ========================================================= */
+:root{
+  --navy:#082b4c;
+  --navy-mid:#0d3b65;
+  --navy-light:#123f69;
+  --navy-border:#b8c9d9;
+  --amber:#d6a84b;
+  --amber-dark:#aa7b23;
+  --amber-glow:rgba(214,168,75,.18);
+  --ice:#f7fbff;
+  --bg:#eef4f9;
+  --card:#ffffff;
+  --primary:#075aa6;
+  --primary-dark:#043d74;
+  --success:#167d60;
+  --success-bg:rgba(22,125,96,.11);
+  --warning:#ae6e00;
+  --warning-bg:rgba(174,110,0,.11);
+  --danger:#c33d43;
+  --danger-bg:rgba(195,61,67,.11);
+  --text:#142536;
+  --text2:#546b7f;
+  --text3:#8193a3;
+  --border:#d9e3ec;
+  --border-light:#e9f0f6;
+  --shadow:0 7px 22px rgba(8,43,76,.10);
+  --shadow-lg:0 18px 48px rgba(8,43,76,.20);
+  --radius:8px;
+  --radius-lg:16px;
+  --font:'Noto Sans KR',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo',sans-serif;
+  --transition:.24s cubic-bezier(.2,.7,.2,1);
+}
+*{scrollbar-color:#7fa4c5 #e7eef5;scrollbar-width:thin}
+html{background:var(--bg)}
+body{
+  color:var(--text);
+  background:
+    radial-gradient(circle at 7% 14%,rgba(43,125,190,.10),transparent 22%),
+    radial-gradient(circle at 92% 4%,rgba(214,168,75,.10),transparent 18%),
+    linear-gradient(135deg,#f8fbfd 0%,#eef4f9 55%,#e9f1f7 100%);
+  position:relative;
+}
+body:before{content:'';display:block;height:6px;background:linear-gradient(90deg,#063967 0%,#075aa6 56%,#d6a84b 56%,#d6a84b 100%);box-shadow:0 2px 8px rgba(8,43,76,.18)}
+body:after{content:'';position:fixed;inset:0;pointer-events:none;opacity:.22;background-image:linear-gradient(rgba(8,43,76,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(8,43,76,.035) 1px,transparent 1px);background-size:34px 34px;mask-image:linear-gradient(to bottom,black,transparent 72%)}
+.nav{
+  min-height:76px;padding:0 max(20px,calc((100vw - 1180px)/2));gap:4px;
+  background:linear-gradient(180deg,#0a3155 0%,#082b4c 100%);border-bottom:4px solid var(--amber);
+  box-shadow:0 8px 22px rgba(8,43,76,.20);position:sticky;top:0;z-index:100;overflow-x:auto;
+}
+.nav:before{content:'ICHEON\A LOGISTICS';white-space:pre;line-height:1.05;display:flex;align-items:center;width:210px;flex:0 0 210px;font-size:15px;font-weight:900;letter-spacing:1.1px;color:#fff;position:relative;padding-left:22px}
+.nav:before{border-left:4px solid var(--amber)}
+.nav:after{content:'PUBLIC SERVICE';display:flex;align-items:center;position:absolute;left:max(20px,calc((100vw - 1180px)/2 + 28px));bottom:-26px;color:rgba(255,255,255,.7);font-size:8px;letter-spacing:1.8px;pointer-events:none}
+.nav-btn{height:72px;min-width:96px;padding:0 13px;color:rgba(255,255,255,.66);font-size:12px;font-weight:700;letter-spacing:-.2px;border-radius:0;transition:all var(--transition)}
+.nav-btn i{font-size:14px;color:#9bb8d0;transition:all var(--transition)}
+.nav-btn:hover{color:#fff;background:rgba(255,255,255,.10)}
+.nav-btn:hover i,.nav-btn.active i{color:#f4d38b;transform:translateY(-2px)}
+.nav-btn.active{color:#fff;background:rgba(255,255,255,.08)}
+.nav-btn.active:after{height:4px;bottom:0;left:17px;right:17px;background:linear-gradient(90deg,#e7bf68,#fff1bc,#e7bf68);border-radius:4px 4px 0 0;box-shadow:0 0 14px rgba(214,168,75,.8)}
+.page{max-width:1040px;padding:42px 20px 90px;position:relative;z-index:1}
+.card{background:rgba(255,255,255,.92);border:1px solid rgba(137,168,193,.38);border-radius:16px;box-shadow:var(--shadow);padding:30px 28px;margin-bottom:22px;backdrop-filter:blur(10px);overflow:hidden}
+.card:before{display:block;width:100%;height:4px;bottom:auto;right:0;top:0;left:0;border-radius:16px 16px 0 0;background:linear-gradient(90deg,var(--primary),#3c98d3,var(--amber));opacity:.95}
+.card:hover{box-shadow:0 12px 32px rgba(8,43,76,.14);transform:translateY(-1px);transition:box-shadow var(--transition),transform var(--transition)}
+.card-title{font-size:16px;font-weight:900;letter-spacing:-.4px;color:var(--navy);margin-bottom:18px;position:relative}
+.card-title:after{content:'';display:block;width:34px;height:3px;margin-top:8px;background:var(--amber);border-radius:2px}
+.card-title i{color:var(--primary)}
+.logo{width:70px;height:70px;background:linear-gradient(145deg,#0a3155,#075aa6);border-radius:50%;margin:0 auto 18px;color:#fff;font-size:27px;box-shadow:0 8px 22px rgba(7,90,166,.30),inset 0 0 0 4px rgba(255,255,255,.18);position:relative}
+.logo:before{content:'';position:absolute;inset:8px;border:1px solid rgba(255,255,255,.45);border-radius:50%}
+.logo:after{content:'';position:absolute;width:9px;height:9px;border-radius:50%;background:#f3cd74;right:9px;top:10px;box-shadow:0 0 10px rgba(243,205,116,.8)}
+.logo-sm{width:44px;height:44px}
+input,select,textarea,.input-group input{background:#fff;color:var(--text);border:1px solid #c5d4e1;border-radius:8px;min-height:44px;box-shadow:inset 0 1px 2px rgba(8,43,76,.04)}
+input::placeholder,textarea::placeholder{color:#91a2b1}
+select option{background:#fff;color:var(--text)}
+input:focus,select:focus,textarea:focus,.input-group input:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(7,90,166,.14)}
+.input-group button{background:linear-gradient(135deg,#075aa6,#043d74);color:#fff;border-radius:8px;box-shadow:0 5px 14px rgba(7,90,166,.24)}
+.btn{border-radius:8px;min-height:44px;font-size:13px;font-weight:800;box-shadow:none;letter-spacing:-.2px}
+.btn-p{background:linear-gradient(135deg,#075aa6,#043d74);color:#fff;box-shadow:0 6px 16px rgba(7,90,166,.25)}
+.btn-p:hover{background:linear-gradient(135deg,#0a6fc8,#07509a);box-shadow:0 9px 22px rgba(7,90,166,.35);filter:none;transform:translateY(-1px)}
+.btn-s{background:#fff;color:var(--navy);border:1px solid #b7cada}
+.btn-s:hover{background:#edf5fc;color:var(--primary);border-color:#78a8cb}
+.btn-success{background:#198361;color:#fff}.btn-danger{background:#c4494f;color:#fff}
+.btn-sm{min-height:36px;border-radius:7px;padding:6px 12px}
+.btn-checkin{background:linear-gradient(135deg,#075aa6 0%,#043d74 100%);color:#fff;border-radius:12px;box-shadow:0 9px 24px rgba(7,90,166,.30);font-size:18px;padding:19px 24px;position:relative;overflow:hidden}
+.btn-checkin:before{content:'';position:absolute;inset:0;transform:translateX(-110%);background:linear-gradient(100deg,transparent,rgba(255,255,255,.22),transparent);animation:govShine 3.2s infinite}
+.btn-checkin:hover{background:linear-gradient(135deg,#0a6fc8,#07509a);box-shadow:0 13px 30px rgba(7,90,166,.38);filter:none}
+.clock-display .time{font-size:44px;font-weight:900;letter-spacing:1px;color:var(--navy)}
+.clock-display .date{color:var(--text2)}
+.summary-grid{gap:12px}.summary-card{background:linear-gradient(145deg,#fff,#f5f9fc);border:1px solid #cfdeea;border-radius:12px;box-shadow:0 4px 13px rgba(8,43,76,.07);padding:18px 12px;transition:transform var(--transition),box-shadow var(--transition)}
+.summary-card:hover{transform:translateY(-4px);box-shadow:0 10px 20px rgba(8,43,76,.14)}.summary-card:after{height:3px;background:linear-gradient(90deg,var(--primary),var(--amber))!important;opacity:1}.summary-card .num{font-size:30px;font-weight:900;color:var(--navy)}.summary-card .label{color:var(--text2)}
+.table-wrap{border:1px solid #cbd9e5;border-radius:10px;background:#fff;box-shadow:0 3px 10px rgba(8,43,76,.05)}
+table{font-size:13px}th,td{padding:12px 10px;border-bottom:1px solid #e4edf4}th{background:linear-gradient(180deg,#f1f6fa,#e8f0f6);color:#48647c;font-size:10px;font-weight:900}tr:nth-child(even){background:#fbfdff}tr:hover td{background:#eef7ff!important}
+.emp-grid{gap:10px}.emp-card{background:#fff;border:1px solid #cfdde8;border-radius:10px;padding:17px 10px;box-shadow:0 3px 10px rgba(8,43,76,.05);transition:all var(--transition)}.emp-card:hover{background:#f7fbff;border-color:#6aa2cb;box-shadow:0 9px 22px rgba(8,43,76,.14);transform:translateY(-3px)}.emp-card .team{color:#668096}
+.team-header{color:var(--primary);border-bottom:2px solid #d6a84b}
+.badge{border-radius:12px;padding:5px 10px;font-size:10px;font-weight:900}
+.scanner-wrap{border-radius:10px;background:#061c31;box-shadow:0 8px 24px rgba(8,43,76,.18)}.scanner-overlay{border:2px solid #f3d27b;box-shadow:inset 0 0 22px rgba(243,210,123,.18)}
+.result-wrap .time-box{background:#eaf3fa}.progress-bar{background:#e0eaf2}
+.filter-bar{background:linear-gradient(135deg,#f7fbfe,#eaf3f9);border:1px solid #cadbe8;padding:13px;border-radius:10px}
+.vc-item,.vc-card{background:#fff;border:1px solid #cbdbe7;border-radius:11px;box-shadow:0 3px 10px rgba(8,43,76,.05)}.vc-item:hover,.vc-card:hover{background:#f7fbfe}.vc-item-num{background:linear-gradient(135deg,#075aa6,#043d74);color:#fff;box-shadow:0 3px 8px rgba(7,90,166,.24)}.vc-result-btn{background:#fff;border-color:#c3d4e1;color:#587084}
+#seatCtxMenu{background:#fff;border-color:#bcd0df;box-shadow:var(--shadow-lg)}#seatCtxMenu .ctx-header{border-color:#dfe9f1}.seat-team-block{background:rgba(255,255,255,.86);border:1px solid #cddde9;border-radius:11px;padding:14px;box-shadow:0 3px 10px rgba(8,43,76,.05)}.seat-grid{background:#f5f9fc}
+.seat.nocheck{background:#fff;border-color:#c5d6e3}.seat.attend{background:rgba(22,125,96,.11)}.seat.late{background:rgba(174,110,0,.11)}.seat.absent{background:rgba(195,61,67,.11)}
+.modal-overlay{background:rgba(8,43,76,.58)}
+.toast{background:#082b4c;color:#fff;border-radius:8px;box-shadow:0 8px 24px rgba(8,43,76,.25);border:1px solid rgba(255,255,255,.16)}
+@keyframes govShine{0%,45%{transform:translateX(-110%)}70%,100%{transform:translateX(110%)}}
+@keyframes govFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@media(max-width:768px){
+  .nav{min-height:66px;padding:0 12px}.nav:before{width:130px;flex-basis:130px;font-size:11px;padding-left:14px}.nav:after{display:none}.nav-btn{height:62px;min-width:74px;padding:0 8px;font-size:10px}.nav-btn.active:after{left:11px;right:11px}.page{padding:28px 12px 74px}.card{padding:24px 16px;border-radius:14px}.clock-display .time{font-size:36px}
+}
+@media(max-width:480px){
+  .nav{padding:0 7px}.nav:before{width:38px;flex-basis:38px;font-size:0;padding-left:0;border-left-width:3px}.nav-btn{min-width:58px}.nav-btn span{display:none}.nav-btn i{font-size:15px}.nav-btn{flex-direction:column;gap:3px}.page{padding:16px 9px 62px}.card{padding:20px 13px;margin-bottom:14px}.logo{width:58px;height:58px}.clock-display .time{font-size:29px}.summary-grid{gap:6px}.summary-card{padding:13px 7px}.summary-card .num{font-size:22px}
+}
+
 </style>
 </head>
 <body>
